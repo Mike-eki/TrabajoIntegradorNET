@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+using DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Models.Entities;
-using Services.Interfaces;
 using Services;
+using Services.Interfaces;
 
 namespace WebAPI.Controllers
 {
@@ -12,23 +14,34 @@ namespace WebAPI.Controllers
     {
         private readonly ILogger<UsersController> _logger;
 
-        private readonly IUserService _userService;
+        //private readonly IUserService _userService;
         private readonly IAuthService _authService;
 
-        // En producción: Obtendrías el userId del token JWT
-        private const int TEST_USER_ID = 1; // Para pruebas
-
-        public UsersController(
-            IUserService userService,
-            IAuthService authService)
+        public UsersController(IAuthService authService, ILogger<UsersController> logger)
         {
-            _userService = userService;
+            _logger = logger;
+
+            //_userService = userService;
             _authService = authService;
         }
 
-        public UsersController(ILogger<UsersController> logger)
+        // POST api/auth/login
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] LoginDTO dto)
         {
-            _logger = logger;
+            // 1. Validar formato de datos (atributos [Required] en LoginDTO)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // 2. Autenticar usando el servicio
+            var user = _authService.Authenticate(dto.Username, dto.Password);
+
+            // 3. Manejar resultado
+            if (user == null)
+                return Unauthorized(new { message = "Credenciales inválidas" });
+
+            // 5. Devolver respuesta exitosa
+            return Ok(new { message = "Login exitoso" });
         }
 
     }
