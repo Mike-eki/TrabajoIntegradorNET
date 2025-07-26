@@ -6,6 +6,8 @@ namespace Services.Interfaces
     public interface IUserService
     {
         //UserDTO GetUserProfile(int userId);
+        string GetUserRoleName(int roleId);
+        void RegisterUser(RegisterUserDTO dto);
         //User RegisterUser(RegisterUserDTO dto);
         //void UpdateUserProfile(int userId, UpdateUserDTO dto);
         //void ChangePassword(int userId, ChangePasswordDTO dto);

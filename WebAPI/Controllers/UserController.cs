@@ -14,14 +14,14 @@ namespace WebAPI.Controllers
     {
         private readonly ILogger<UsersController> _logger;
 
-        //private readonly IUserService _userService;
+        private readonly IUserService _userService;
         private readonly IAuthService _authService;
 
-        public UsersController(IAuthService authService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IUserService userService, ILogger<UsersController> logger)
         {
             _logger = logger;
 
-            //_userService = userService;
+            _userService = userService;
             _authService = authService;
         }
 
@@ -40,9 +40,21 @@ namespace WebAPI.Controllers
             if (user == null)
                 return Unauthorized(new { message = "Credenciales inválidas" });
 
+            string userRoleName = _userService.GetUserRoleName(user.RoleId);
+
             // 5. Devolver respuesta exitosa
-            return Ok(new { message = "Login exitoso" });
+            return Ok(new { message = $"Login exitoso de un {userRoleName}" });
         }
 
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] RegisterUserDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _userService.RegisterUser(dto);
+
+            return Ok(new {message = "Register endpoint not implemented yet."});
+        }
     }
 }

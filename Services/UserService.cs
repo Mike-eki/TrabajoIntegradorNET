@@ -9,14 +9,40 @@ namespace Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly ISpecialtyRepository _specialtyRepository;
-        private readonly IRoleRepository _roleRepository;
 
-        public UserService(IUserRepository userRepository, ISpecialtyRepository specialtyRepository, IRoleRepository roleRepository)
+        public UserService(IUserRepository userRepository)
         {
             _userRepository = userRepository;
-            _specialtyRepository = specialtyRepository;
-            _roleRepository = roleRepository;
+        }
+         
+        public string GetUserRoleName(int roleId)
+        {
+            var roles = _userRepository.GetUserRoles();
+
+            var role = roles.Find(r => r.Id == roleId);
+            if (role == null)
+            {
+                throw new KeyNotFoundException("Rol no encontrado");
+            }
+
+            return role.Name;
+        }
+
+        public void RegisterUser(RegisterUserDTO dto)
+        {
+            // Aquí se implementaría la lógica para registrar un nuevo usuario
+            // Validar el DTO, crear una nueva entidad User y guardarla en la base de datos
+            // Por ejemplo:
+            var user = new User
+            {
+                Username = dto.Username,
+                Password = dto.Password, // Asegúrate de hashear la contraseña antes de guardarla
+                Email = dto.Email,
+                Name = dto.Name,
+                RoleId = dto.RoleId
+            };
+            //
+            _userRepository.AddUser(user);
         }
 
         //public UserDTO GetUserProfile(int userId)
