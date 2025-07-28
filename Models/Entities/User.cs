@@ -1,4 +1,5 @@
 ﻿using Models.Relations;
+using Models.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace Models.Entities
@@ -26,10 +27,9 @@ namespace Models.Entities
         public string Name { get; set; } = null!;
 
         [Required]
-        public int RoleId { get; set; }
+        public RoleType RoleName { get; set; }
 
         // Navegación
-        public virtual Role Role { get; set; } = null!;
 
         public virtual ICollection<StudentSpecialty> StudentSpecialties { get; set; } = new List<StudentSpecialty>();
         public virtual ICollection<ProfessorSpecialty> ProfessorSpecialties { get; set; } = new List<ProfessorSpecialty>();

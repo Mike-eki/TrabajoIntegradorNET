@@ -6,8 +6,6 @@ namespace Repositories.Interfaces
     {
         User? GetUserByUsername(string username);
         User? GetUserById(int id);
-        List<Role> GetUserRoles();
-
         void AddUser(User user);
     }
 }

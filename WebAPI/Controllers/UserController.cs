@@ -40,10 +40,10 @@ namespace WebAPI.Controllers
             if (user == null)
                 return Unauthorized(new { message = "Credenciales inválidas" });
 
-            string userRoleName = _userService.GetUserRoleName(user.RoleId);
+            //string userRoleName = _userService.GetUserRoleName(user.RoleId);
 
             // 5. Devolver respuesta exitosa
-            return Ok(new { message = $"Login exitoso de un {userRoleName}" });
+            return Ok(new { message = $"Login exitoso." });
         }
 
         [HttpPost("register")]
@@ -52,9 +52,37 @@ namespace WebAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            _userService.RegisterUser(dto);
+            try
+            {
+                var user = _userService.RegisterUser(dto);
 
-            return Ok(new {message = "Register endpoint not implemented yet."});
+                RegisterUserDTO okDto = new RegisterUserDTO
+                {
+                    Username = user.Username,
+                    Email = user.Email,
+                    Name = user.Name,
+                    RoleName = user.RoleName
+                };
+
+                return CreatedAtAction(nameof(Register), okDto, new {message = "Usuario registrado"});
+
+            }
+            catch (InvalidOperationException ex)
+            {
+                // 5. Errores de negocio (ej: "Nombre de usuario ya existe")
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                // 6. Argumentos inválidos (ej: "Rol no válido")
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al registrar usuario");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+            
         }
     }
 }

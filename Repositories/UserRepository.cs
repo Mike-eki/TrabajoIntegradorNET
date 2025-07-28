@@ -9,7 +9,7 @@ namespace Repositories
         public User? GetUserByUsername(string username)
         {
             return InMemory.usersSample
-                .FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(u => u.Username.Equals(username, StringComparison.Ordinal));
         }
 
         public User? GetUserById(int id)
@@ -17,15 +17,10 @@ namespace Repositories
             return InMemory.usersSample.FirstOrDefault(u => u.Id == id);
         }
 
-        public List<Role> GetUserRoles()
-        {
-            return InMemory.rolesSample;
-        }
-
         public void AddUser(User user)
         {
-            if (user == null) throw new ArgumentNullException(nameof(user));
-            if (InMemory.usersSample.Any(u => u.Username.Equals(user.Username, StringComparison.OrdinalIgnoreCase)))
+
+            if (InMemory.usersSample.Any(u => u.Username.Equals(user.Username, StringComparison.Ordinal)))
             {
                 throw new InvalidOperationException("El nombre de usuario ya existe.");
             }
@@ -33,8 +28,10 @@ namespace Repositories
             {
                 throw new InvalidOperationException("El email de usuario ya existe.");
             }
-                user.Id = InMemory.usersSample.Max(u => u.Id) + 1; // Assign a new ID
+
+            user.Id = InMemory.usersSample.Max(u => u.Id) + 1; // Assign a new ID
             InMemory.usersSample.Add(user);
+
         }
     }
 }

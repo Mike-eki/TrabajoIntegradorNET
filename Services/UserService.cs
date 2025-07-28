@@ -1,8 +1,10 @@
-﻿using DTOs;
-using Services.Interfaces;
+﻿using Data;
+using DTOs;
 using Models.Entities;
-using Repositories.Interfaces;
+using Models.Enums;
 using Repositories;
+using Repositories.Interfaces;
+using Services.Interfaces;
 
 namespace Services
 {
@@ -15,61 +17,46 @@ namespace Services
             _userRepository = userRepository;
         }
          
-        public string GetUserRoleName(int roleId)
-        {
-            var roles = _userRepository.GetUserRoles();
+        //public string GetUserRoleName(int roleId)
+        //{
+        //    var roles = _userRepository.GetUserRoles();
 
-            var role = roles.Find(r => r.Id == roleId);
-            if (role == null)
+        //    var role = roles.Find(r => r.Id == roleId);
+        //    if (role == null)
+        //    {
+        //        throw new KeyNotFoundException("Rol no encontrado");
+        //    }
+
+        //    return role.Name;
+        //}
+
+        public User RegisterUser(RegisterUserDTO dto)
+        {
+
+            if (!Enum.IsDefined(typeof(RoleType), dto.RoleName))
             {
-                throw new KeyNotFoundException("Rol no encontrado");
+                var validRoles = string.Join(", ", Enum.GetNames(typeof(RoleType)));
+                throw new ArgumentException($"El rol '{dto.RoleName}' no es válido. Roles permitidos: {validRoles}");
             }
 
-            return role.Name;
-        }
-
-        public void RegisterUser(RegisterUserDTO dto)
-        {
-            // Aquí se implementaría la lógica para registrar un nuevo usuario
-            // Validar el DTO, crear una nueva entidad User y guardarla en la base de datos
-            // Por ejemplo:
             var user = new User
             {
                 Username = dto.Username,
-                Password = dto.Password, // Asegúrate de hashear la contraseña antes de guardarla
+                Password = dto.Password,
                 Email = dto.Email,
                 Name = dto.Name,
-                RoleId = dto.RoleId
+                RoleName = dto.RoleName
             };
-            //
+
             _userRepository.AddUser(user);
+            
+            return user;
         }
 
         //public UserDTO GetUserProfile(int userId)
         //{
         //    var user = _userRepository.GetUserById(userId);
         //    if (user == null) throw new KeyNotFoundException("Usuario no encontrado");
-
-        //    var specialties = _specialtyRepository.GetSpecialties();
-        //    var roles = _roleRepository.GetRoles();
-
-        //    Role roleUser = roles.FirstOrDefault(r => r.Id == user.RoleId);
-
-        //    if (roleUser == "Student")
-        //    {
-        //        var studentSpecialties = user.StudentSpecialties.Select(ss => ss.SpecialtyId).ToList();
-        //        //return MapUserToDTO(user, specialties.Where(s => studentSpecialties.Contains(s.Id)).ToList());
-        //    }
-        //    else if (roleUser == "Professor")
-        //    {
-        //        var professorSpecialties = user.ProfessorSpecialties.Select(ps => ps.SpecialtyId).ToList();
-        //        return MapUserToDTO(user, specialties.Where(s => professorSpecialties.Contains(s.Id)).ToList());
-        //    }
-        //    else
-        //    {
-        //        // For other roles, return an empty specialties list
-        //        return MapUserToDTO(user, new List<Specialty>());
-        //    }
 
         //    return new UserDTO
         //    {

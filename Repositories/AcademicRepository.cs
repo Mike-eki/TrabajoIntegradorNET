@@ -3,7 +3,7 @@ using Repositories.Interfaces;
 
 namespace Repositories
 {
-    internal class SpecialtyRepository : ISpecialtyRepository
+    internal class AcademicRepository
     {
         public List<Specialty> GetSpecialties()
         {
