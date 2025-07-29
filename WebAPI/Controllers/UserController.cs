@@ -40,10 +40,18 @@ namespace WebAPI.Controllers
             if (user == null)
                 return Unauthorized(new { message = "Credenciales inválidas" });
 
-            //string userRoleName = _userService.GetUserRoleName(user.RoleId);
+            // 4. Preparar respuesta
+            UserDTO userDTO = new UserDTO
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Name = user.Name,
+                RoleName = user.RoleName,
+            };
 
             // 5. Devolver respuesta exitosa
-            return Ok(new { message = $"Login exitoso." });
+            return Ok(new { user = userDTO, message = $"Login exitoso." });
         }
 
         [HttpPost("register")]
