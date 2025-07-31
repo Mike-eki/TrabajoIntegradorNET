@@ -6,11 +6,13 @@ namespace FrontendWindowsForm
 {
     public partial class LoginForm : Form
     {
-        private static readonly HttpClient client = new HttpClient();
-        public LoginForm()
+        private HttpClient _client;
+        private ApplicationManager _appManager; // Referencia al gestor
+        public LoginForm(ApplicationManager appManager)
         {
             InitializeComponent();
-            client.BaseAddress = new Uri("https://localhost:5001/");
+            _client = HttpClientManager.GetClient(); // ✅ Usar el compartido
+            _appManager = appManager; // Recibir el gestor
         }
         public class LoginResponse
         {
@@ -29,7 +31,7 @@ namespace FrontendWindowsForm
                     password = passwordBox.Text
                 };
 
-                var response = await client.PostAsJsonAsync("api/Users/login", loginData);
+                var response = await _client.PostAsJsonAsync("api/Users/login", loginData);
                 response.EnsureSuccessStatusCode(); // Lanza excepción si hay error HTTP
 
                 if (response.IsSuccessStatusCode)
@@ -37,27 +39,11 @@ namespace FrontendWindowsForm
                     var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
                     MessageBox.Show($"¡Bienvenido/a {result.user.RoleName} {result.user.Name}!");
 
+                    // ✅ Usar el gestor para mostrar el formulario de usuario
+                    _appManager.ShowUserForm(result.user);
+
+                    // ✅ Ocultar este login (NO cerrarlo)
                     this.Hide();
-
-                    switch (result.user.RoleName)
-                    {
-                        case RoleType.Student:
-                            new StudentForm(client, result.user).Show();
-                            break;
-                        case RoleType.Professor:
-                            new ProfessorForm(client, result.user).Show();
-                            break;
-                        case RoleType.Administrator:
-                            new AdministratorForm(client, result.user).Show();
-                            break;
-                        default:
-                            MessageBox.Show("Rol no reconocido");
-                            this.Show(); // Volver a mostrar login
-                            return;
-                    }
-
-                    // ✅ Cerrar login cuando se abra el otro formulario
-                    //this.Dispose();
                 }
                 else
                 {
@@ -78,6 +64,21 @@ namespace FrontendWindowsForm
                 MessageBox.Show($"Error: {ex.Message}");
             }
 
+        }
+
+        // ✅ Sobrescribir el cierre para evitar cerrar toda la app
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Solo ocultar, no cerrar realmente
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                this.Hide();
+            }
+            else
+            {
+                base.OnFormClosing(e);
+            }
         }
     }
 }

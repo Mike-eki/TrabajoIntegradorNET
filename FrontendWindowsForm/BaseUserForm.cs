@@ -1,5 +1,6 @@
 ﻿using DTOs;
 using System.Net.Http.Json;
+using FrontendWindowsForm.Features;
 
 namespace FrontendWindowsForm
 {
@@ -7,6 +8,7 @@ namespace FrontendWindowsForm
     {
         protected HttpClient _client;
         protected UserDTO _currentUser;
+        protected ApplicationManager _appManager; // Referencia al gestor
 
         // Controles comunes (declara los que necesites)
         protected Button btnEditProfile;
@@ -18,15 +20,12 @@ namespace FrontendWindowsForm
         protected Button btnViewGrades;
         protected Panel mainPanel; // Panel para contenido dinámico
 
-        public BaseUserForm()
+        public BaseUserForm(UserDTO user, ApplicationManager appManager)
         {
             InitializeComponent();
-        }
-
-        public BaseUserForm(HttpClient client, UserDTO user) : this()
-        {
-            _client = client;
+            _client = HttpClientManager.GetClient();
             _currentUser = user;
+            _appManager = appManager;
             InitializeCommonControls();
             SetupCommonEventHandlers();
         }
@@ -79,9 +78,9 @@ namespace FrontendWindowsForm
         // Métodos comunes que pueden ser sobrescritos
         protected virtual async void BtnEditProfile_Click(object sender, EventArgs e)
         {
-            var editForm = new EditProfileForm(_client, _currentUser);
-            editForm.UserUpdated += (s, user) => _currentUser = user;
-            editForm.ShowDialog();
+            //var editForm = new EditProfileForm(_client, _currentUser);
+            //editForm.UserUpdated += (s, user) => _currentUser = user;
+            //editForm.ShowDialog();
         }
 
         protected virtual void BtnLogout_Click(object sender, EventArgs e)
@@ -91,8 +90,10 @@ namespace FrontendWindowsForm
 
             if (result == DialogResult.Yes)
             {
-                var loginForm = new LoginForm();
-                loginForm.Show();
+                // ✅ Usar el gestor para volver al login
+                _appManager.ShowLoginForm();
+
+                // ✅ Cerrar este formulario
                 this.Close();
             }
         }
@@ -101,10 +102,10 @@ namespace FrontendWindowsForm
         {
             try
             {
-                var response = await _client.GetAsync("api/courses");
+                var response = await _client.GetAsync("api/Courses");
                 if (response.IsSuccessStatusCode)
                 {
-                    var courses = await response.Content.ReadFromJsonAsync<List<CourseDto>>();
+                    var courses = await response.Content.ReadFromJsonAsync<List<CourseDTO>>();
                     DisplayCourses(courses);
                 }
             }
@@ -121,7 +122,7 @@ namespace FrontendWindowsForm
                 var response = await _client.GetAsync("api/specialties");
                 if (response.IsSuccessStatusCode)
                 {
-                    var specialties = await response.Content.ReadFromJsonAsync<List<SpecialtyDto>>();
+                    var specialties = await response.Content.ReadFromJsonAsync<List<SpecialtyDTO>>();
                     DisplaySpecialties(specialties);
                 }
             }
@@ -138,7 +139,7 @@ namespace FrontendWindowsForm
                 var response = await _client.GetAsync("api/curricularplans");
                 if (response.IsSuccessStatusCode)
                 {
-                    var plans = await response.Content.ReadFromJsonAsync<List<CurricularPlanDto>>();
+                    var plans = await response.Content.ReadFromJsonAsync<List<CurricularPlanReportDTO>>();
                     DisplayPlans(plans);
                 }
             }
@@ -155,7 +156,7 @@ namespace FrontendWindowsForm
                 var response = await _client.GetAsync("api/commissions");
                 if (response.IsSuccessStatusCode)
                 {
-                    var commissions = await response.Content.ReadFromJsonAsync<List<CommissionDto>>();
+                    var commissions = await response.Content.ReadFromJsonAsync<List<CommissionDTO>>();
                     DisplayCommissions(commissions);
                 }
             }
@@ -179,7 +180,7 @@ namespace FrontendWindowsForm
         }
 
         // Métodos para mostrar datos en el panel principal
-        protected virtual void DisplayCourses(List<CourseDto> courses)
+        protected virtual void DisplayCourses(List<CourseDTO> courses)
         {
             ClearMainPanel();
             var listView = new ListView
@@ -190,6 +191,7 @@ namespace FrontendWindowsForm
             listView.Columns.Add("ID", 50);
             listView.Columns.Add("Nombre", 200);
             listView.Columns.Add("Créditos", 80);
+            listView.Columns.Add("Período Académico", 150);
 
             foreach (var course in courses)
             {
@@ -197,7 +199,8 @@ namespace FrontendWindowsForm
                 {
                     course.Id.ToString(),
                     course.Name,
-                    course.Credits.ToString()
+                    course.Credits.ToString(),
+                    course.AcademicPeriod
                 });
                 listView.Items.Add(item);
             }
@@ -205,7 +208,7 @@ namespace FrontendWindowsForm
             mainPanel.Controls.Add(listView);
         }
 
-        protected virtual void DisplaySpecialties(List<SpecialtyDto> specialties)
+        protected virtual void DisplaySpecialties(List<SpecialtyDTO> specialties)
         {
             ClearMainPanel();
             var listBox = new ListBox { Dock = DockStyle.Fill };
@@ -213,7 +216,7 @@ namespace FrontendWindowsForm
             mainPanel.Controls.Add(listBox);
         }
 
-        protected virtual void DisplayPlans(List<CurricularPlanDto> plans)
+        protected virtual void DisplayPlans(List<CurricularPlanReportDTO> plans)
         {
             ClearMainPanel();
             var grid = new DataGridView
@@ -229,7 +232,7 @@ namespace FrontendWindowsForm
             mainPanel.Controls.Add(grid);
         }
 
-        protected virtual void DisplayCommissions(List<CommissionDto> commissions)
+        protected virtual void DisplayCommissions(List<CommissionDTO> commissions)
         {
             ClearMainPanel();
             var treeView = new TreeView { Dock = DockStyle.Fill };

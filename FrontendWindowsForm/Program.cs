@@ -1,4 +1,4 @@
-namespace FrontendWindowsForm
+﻿namespace FrontendWindowsForm
 {
     internal static class Program
     {
@@ -11,7 +11,9 @@ namespace FrontendWindowsForm
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new LoginForm());
+
+            // ✅ Iniciar con el gestor de aplicación
+            Application.Run(new ApplicationManager());
         }
     }
 }

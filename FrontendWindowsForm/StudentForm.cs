@@ -11,15 +11,12 @@ using System.Windows.Forms;
 
 namespace FrontendWindowsForm
 {
-    public partial class StudentForm : Form
+    public partial class StudentForm : BaseUserForm
     {
-        private HttpClient client;
-        private UserDTO currentUser;
-        public StudentForm(HttpClient client, UserDTO currentUser)
+        public StudentForm(UserDTO currentUser, ApplicationManager appManager) : base(currentUser, appManager)
         {
             InitializeComponent();
-            this.client = client;
-            this.currentUser = currentUser;
+            this.Text = $"Panel de Estudiante - {currentUser.Name}";
         }
 
         private void StudentForm_Load(object sender, EventArgs e)

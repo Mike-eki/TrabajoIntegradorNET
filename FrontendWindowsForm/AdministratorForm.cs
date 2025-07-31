@@ -11,15 +11,11 @@ using System.Windows.Forms;
 
 namespace FrontendWindowsForm
 {
-    public partial class AdministratorForm : Form
+    public partial class AdministratorForm : BaseUserForm
     {
-        private HttpClient client;
-        private UserDTO currentUser;
-        public AdministratorForm(HttpClient client, UserDTO currentUser)
+        public AdministratorForm(UserDTO currentUser, ApplicationManager appManager) : base(currentUser, appManager)
         {
-            InitializeComponent();
-            this.client = client;
-            this.currentUser = currentUser;
+            this.Text = $"Panel de Administrador - {currentUser.Name}";
         }
     }
 }

@@ -11,15 +11,13 @@ using System.Windows.Forms;
 
 namespace FrontendWindowsForm
 {
-    public partial class ProfessorForm : Form
+    public partial class ProfessorForm : BaseUserForm
     {
-        private HttpClient client;
-        private UserDTO currentUser;
-        public ProfessorForm(HttpClient client, UserDTO currentUser)
+
+        public ProfessorForm(UserDTO currentUser, ApplicationManager appManager) : base(currentUser, appManager)
         {
-            InitializeComponent();
-            this.client = client;
-            this.currentUser = currentUser;
+        
+            this.Text = $"Panel de Profesor - {currentUser.Name}";
         }
     }
 }
