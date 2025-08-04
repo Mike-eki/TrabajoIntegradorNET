@@ -1,6 +1,8 @@
 ﻿using DTOs;
-using System.Net.Http.Json;
 using FrontendWindowsForm.Features;
+using Models.Enums;
+using System.Net.Http.Json;
+using System.Windows.Forms;
 
 namespace FrontendWindowsForm
 {
@@ -22,7 +24,7 @@ namespace FrontendWindowsForm
         private void SetupCommonEventHandlers()
         {
             btnViewUsers.Click += BtnViewUsers_Click;
-
+            btnCreateUser.Click += BtnCreateUser_Click;
             btnLogout.Click += BtnLogout_Click;
             btnViewCourses.Click += BtnViewCourses_Click;
             btnViewCommissions.Click += BtnViewCommissions_Click;
@@ -198,7 +200,7 @@ namespace FrontendWindowsForm
                     readOnlyProps
                 );
 
-                editForm.ItemUpdated += (s, updatedItem) => {
+                editForm.ItemSaved += (s, updatedItem) => {
                     var updatedUser = updatedItem as UserDTO;
                     if (updatedUser != null)
                     {
@@ -218,7 +220,6 @@ namespace FrontendWindowsForm
                 MessageBox.Show($"Error al editar usuario: {ex.Message}");
             }
         }
-        // Método para eliminar usuario (igual que antes)
         private async Task DeleteUser(UserDTO user, DataGridView dataGridView, int rowIndex)
         {
             // No permitir auto-eliminación
@@ -259,6 +260,47 @@ namespace FrontendWindowsForm
                 {
                     MessageBox.Show($"Error de conexión: {ex.Message}");
                 }
+            }
+        }
+        protected virtual void BtnCreateUser_Click(object? sender, EventArgs e)
+        {
+            // Solo administradores pueden crear usuarios, por ejemplo
+            // Puedes ajustar esta lógica según tus roles
+            if (_currentUser.RoleName != RoleType.Administrator)
+            {
+                MessageBox.Show("No tiene permisos para crear usuarios.");
+                return;
+            }
+
+            try
+            {
+                // Definir propiedades de solo lectura (si las hubiera, normalmente ninguna para creación)
+                var readOnlyProps = new List<string>() { "Id" }; // O ["Id"] si el ID se genera en el servidor
+
+                // Crear una instancia vacía del DTO para definir el tipo
+                var newUserTemplate = new RegisterUserDTO();
+
+                // Crear el formulario genérico para creación
+                // Pasamos el Tipo del objeto, no una instancia
+                var createForm = new GenericEditForm(
+                    _client,
+                    typeof(RegisterUserDTO),         // Tipo de objeto a crear
+                    "api/Users/register",             // Endpoint de la API para creación
+                    readOnlyProps            // Propiedades de solo lectura (opcional)
+                );
+
+                // Suscribirse al evento para refrescar la lista si se crea exitosamente
+                createForm.ItemSaved += (s, createdItem) => {
+                    MessageBox.Show("Usuario creado exitosamente. Refresque la lista para verlo.");
+                    // Opcionalmente, puedes volver a cargar la lista de usuarios aquí
+                    // BtnViewUsers_Click(this, EventArgs.Empty); 
+                };
+
+                createForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir formulario de creación: {ex.Message}");
             }
         }
         protected virtual async void BtnViewCourses_Click(object sender, EventArgs e)
