@@ -1,5 +1,6 @@
 using DTOs;
 using Microsoft.AspNetCore.Authorization;
+//using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Models.Entities;
@@ -25,7 +26,78 @@ namespace WebAPI.Controllers
             _authService = authService;
         }
 
-        // POST api/auth/login
+
+        [HttpGet]
+        public IActionResult Get()
+        {
+            try
+            {
+                // 1. Obtener todos los usuarios del servicio
+                var users = _userService.GetAllUsers();
+
+                // 2. Mapear a DTOs para respuesta
+                var userDtos = users.Select(user => new UserDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Name = user.Name,
+                    RoleName = user.RoleName
+                }).ToList();
+
+                // 3. Devolver respuesta exitosa
+                return Ok(new { users = userDtos, message = "Usuarios obtenidos exitosamente" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuarios");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id) 
+        {
+            // 1. Validar ID
+            if (id <= 0)
+                return BadRequest(new { message = "ID inválido" });
+            // 2. Obtener usuario por ID
+            var user = _userService.GetUserById(id);
+            if (user == null)
+                return NotFound(new { message = "Usuario no encontrado" });
+            // 3. Eliminar usuario
+            _userService.DeleteUser(id);
+            // 4. Preparar respuesta
+            var message = "Usuario eliminado";
+            return Ok(new {message});
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult Update([FromBody] UserDTO userDTO)
+        {
+            // 1. Validar formato de datos (atributos [Required] en UpdateUserDTO)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            // 2. Obtener usuario por ID
+            var user = _userService.GetUserById(userDTO.Id);
+            if (user == null)
+                return NotFound(new { message = "Usuario no encontrado" });
+
+            // 3. Actualizar datos del usuario
+            var updateDto = new UpdateUserDTO
+            {
+                Email = user.Email,
+                Name = user.Name
+            };
+            user.Email = updateDto.Email ?? user.Email;
+            user.Name = updateDto.Name ?? user.Name;
+
+            _userService.UpdateUser(user);
+
+            // 4. Preparar respuesta
+            var message = "Usuario actualizado";
+            return Ok(new {message});
+        }
+
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginDTO dto)
         {

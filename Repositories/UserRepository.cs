@@ -33,5 +33,35 @@ namespace Repositories
             InMemory.usersSample.Add(user);
 
         }
+
+        public void UpdateUser(User user)
+        {
+            var existingUser = GetUserById(user.Id);
+            if (existingUser == null)
+            {
+                throw new KeyNotFoundException("Usuario no encontrado");
+            }
+            // Update properties
+            existingUser.Username = user.Username;
+            existingUser.Email = user.Email;
+            existingUser.Name = user.Name;
+            existingUser.RoleName = user.RoleName;
+            // No need to save changes in InMemory, as it's already updated in the list
+        }
+
+        public void DeleteUser(int id)
+        {
+            var user = GetUserById(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("Usuario no encontrado");
+            }
+            InMemory.usersSample.Remove(user);
+        }
+
+        public List<User> GetAllUsers()
+        {
+            return InMemory.usersSample;
+        }
     }
 }

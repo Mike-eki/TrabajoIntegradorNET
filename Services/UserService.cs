@@ -16,19 +16,6 @@ namespace Services
         {
             _userRepository = userRepository;
         }
-         
-        //public string GetUserRoleName(int roleId)
-        //{
-        //    var roles = _userRepository.GetUserRoles();
-
-        //    var role = roles.Find(r => r.Id == roleId);
-        //    if (role == null)
-        //    {
-        //        throw new KeyNotFoundException("Rol no encontrado");
-        //    }
-
-        //    return role.Name;
-        //}
 
         public User RegisterUser(RegisterUserDTO dto)
         {
@@ -51,6 +38,27 @@ namespace Services
             _userRepository.AddUser(user);
             
             return user;
+        }
+
+        public List<User> GetAllUsers()
+        {
+            return _userRepository.GetAllUsers();
+        }
+
+        public User? GetUserById(int id)
+        {
+            return _userRepository.GetUserById(id);
+        }
+
+        public void UpdateUser(User existingUser)
+        {
+            // Save changes (if needed, depending on your repository implementation)
+            _userRepository.UpdateUser(existingUser);
+        }
+
+        public void DeleteUser(int id)
+        {
+            _userRepository.DeleteUser(id);
         }
 
         //public UserDTO GetUserProfile(int userId)

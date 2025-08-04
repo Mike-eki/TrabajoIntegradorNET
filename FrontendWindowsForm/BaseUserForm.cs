@@ -10,79 +10,30 @@ namespace FrontendWindowsForm
         protected UserDTO _currentUser;
         protected ApplicationManager _appManager; // Referencia al gestor
 
-        // Controles comunes (declara los que necesites)
-        protected Button btnEditProfile;
-        protected Button btnLogout;
-        protected Button btnViewCourses;
-        protected Button btnViewSpecialties;
-        protected Button btnViewPlans;
-        protected Button btnViewCommissions;
-        protected Button btnViewGrades;
-        protected Panel mainPanel; // Panel para contenido dinámico
-
         public BaseUserForm(UserDTO user, ApplicationManager appManager)
         {
             InitializeComponent();
             _client = HttpClientManager.GetClient();
             _currentUser = user;
             _appManager = appManager;
-            InitializeCommonControls();
             SetupCommonEventHandlers();
-        }
-
-        private void InitializeCommonControls()
-        {
-            // Crear botones comunes
-            btnEditProfile = new Button { Text = "Editar Perfil", Top = 10, Left = 10 };
-            btnLogout = new Button { Text = "Cerrar Sesión", Top = 10, Left = 120 };
-            btnViewCourses = new Button { Text = "Cursos", Top = 10, Left = 230 };
-            btnViewSpecialties = new Button { Text = "Especialidades", Top = 10, Left = 310 };
-            btnViewPlans = new Button { Text = "Planes", Top = 10, Left = 420 };
-            btnViewCommissions = new Button { Text = "Comisiones", Top = 10, Left = 490 };
-            btnViewGrades = new Button { Text = "Notas", Top = 10, Left = 600 };
-
-            mainPanel = new Panel
-            {
-                Top = 50,
-                Left = 10,
-                Width = 760,
-                Height = 400,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-
-            // Agregar controles al formulario
-            this.Controls.AddRange(new Control[]
-            {
-                btnEditProfile,
-                btnLogout,
-                btnViewCourses,
-                btnViewSpecialties,
-                btnViewPlans,
-                btnViewCommissions,
-                btnViewGrades,
-                mainPanel
-            });
         }
 
         private void SetupCommonEventHandlers()
         {
-            btnEditProfile.Click += BtnEditProfile_Click;
+            btnViewUsers.Click += BtnViewUsers_Click;
+
             btnLogout.Click += BtnLogout_Click;
             btnViewCourses.Click += BtnViewCourses_Click;
-            btnViewSpecialties.Click += BtnViewSpecialties_Click;
-            btnViewPlans.Click += BtnViewPlans_Click;
             btnViewCommissions.Click += BtnViewCommissions_Click;
-            btnViewGrades.Click += BtnViewGrades_Click;
         }
 
-        // Métodos comunes que pueden ser sobrescritos
-        protected virtual async void BtnEditProfile_Click(object sender, EventArgs e)
+        public class ResponseUserList
         {
-            //var editForm = new EditProfileForm(_client, _currentUser);
-            //editForm.UserUpdated += (s, user) => _currentUser = user;
-            //editForm.ShowDialog();
+            public List<UserDTO> Users { get; set; }
+            public string message { get; set; }
         }
-
+        // Métodos comunes que pueden ser sobrescritos
         protected virtual void BtnLogout_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("¿Está seguro que desea cerrar sesión?",
@@ -97,7 +48,219 @@ namespace FrontendWindowsForm
                 this.Close();
             }
         }
+        protected virtual async void BtnViewUsers_Click(object sender, EventArgs e)
+        {
+            ClearMainPanel();
 
+            try
+            {
+                var response = await _client.GetAsync("api/Users");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = response.Content.ReadFromJsonAsync<ResponseUserList>().Result;
+                    if (result != null)
+                        DisplayUsers(result.Users);
+                    else
+                        MessageBox.Show("La lista de usuarios está vacía o no se pudo obtener.");
+                }
+                else
+                {
+                    MessageBox.Show("Error al obtener la lista de usuarios.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}");
+            }
+        }
+        protected virtual void DisplayUsers(List<UserDTO> users)
+        {
+            ClearMainPanel();
+            var dataGridView = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                ReadOnly = true
+            };
+
+            // Configurar columnas
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Id",
+                HeaderText = "ID",
+                FillWeight = 10
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Username",
+                HeaderText = "Usuario",
+                FillWeight = 20
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Name",
+                HeaderText = "Nombre",
+                FillWeight = 25
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Email",
+                HeaderText = "Email",
+                FillWeight = 25
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "RoleName",
+                HeaderText = "Rol",
+                FillWeight = 15
+            });
+
+            // Agregar columnas de botones
+            DataGridViewButtonColumn editButton = new DataGridViewButtonColumn
+            {
+                Name = "Edit",
+                HeaderText = "✏️",
+                Text = "Editar",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 10
+            };
+            dataGridView.Columns.Add(editButton);
+
+            DataGridViewButtonColumn deleteButton = new DataGridViewButtonColumn
+            {
+                Name = "Delete",
+                HeaderText = "🗑️",
+                Text = "Eliminar",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 10
+            };
+            dataGridView.Columns.Add(deleteButton);
+
+            // Llenar datos
+            foreach (var user in users)
+            {
+                int rowIndex = dataGridView.Rows.Add();
+                DataGridViewRow row = dataGridView.Rows[rowIndex];
+
+                row.Cells["Id"].Value = user.Id;
+                row.Cells["Username"].Value = user.Username;
+                row.Cells["Name"].Value = user.Name;
+                row.Cells["Email"].Value = user.Email;
+                row.Cells["RoleName"].Value = user.RoleName;
+
+                // Guardar el objeto User en la fila
+                row.Tag = user;
+            }
+
+            // Manejar clics en botones
+            dataGridView.CellClick += async (sender, e) => {
+                if (e.RowIndex < 0) return;
+
+                DataGridView dgv = sender as DataGridView;
+                DataGridViewRow row = dgv.Rows[e.RowIndex];
+                UserDTO user = row.Tag as UserDTO;
+
+                if (user == null) return;
+
+                if (e.ColumnIndex == dgv.Columns["Edit"].Index)
+                {
+                    await EditUserGeneric(user, dgv, e.RowIndex);
+                }
+                else if (e.ColumnIndex == dgv.Columns["Delete"].Index)
+                {
+                    await DeleteUser(user, dgv, e.RowIndex);
+                }
+            };
+
+            mainPanel.Controls.Add(dataGridView);
+        }
+
+        // Método genérico para editar cualquier usuario
+        private async Task EditUserGeneric(UserDTO user, DataGridView dataGridView, int rowIndex)
+        {
+            try
+            {
+                // Propiedades de solo lectura
+                var readOnlyProps = new List<string> { "Id", "Username" };
+
+                var editForm = new GenericEditForm(
+                    _client,
+                    user,
+                    $"api/Users/{user.Id}",
+                    readOnlyProps
+                );
+
+                editForm.ItemUpdated += (s, updatedItem) => {
+                    var updatedUser = updatedItem as UserDTO;
+                    if (updatedUser != null)
+                    {
+                        // Actualizar fila en el DataGridView
+                        var row = dataGridView.Rows[rowIndex];
+                        row.Cells["Name"].Value = updatedUser.Name;
+                        row.Cells["Email"].Value = updatedUser.Email;
+                        row.Cells["RoleName"].Value = updatedUser.RoleName;
+                        row.Tag = updatedUser; // Actualizar objeto en Tag
+                    }
+                };
+
+                editForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al editar usuario: {ex.Message}");
+            }
+        }
+        // Método para eliminar usuario (igual que antes)
+        private async Task DeleteUser(UserDTO user, DataGridView dataGridView, int rowIndex)
+        {
+            // No permitir auto-eliminación
+            if (user.Id == _currentUser.Id)
+            {
+                MessageBox.Show("No puede eliminarse a sí mismo");
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"¿Está seguro que desea eliminar al usuario '{user.Name}'?",
+                "Confirmar eliminación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    var response = await _client.DeleteAsync($"api/Users/{user.Id}");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        dataGridView.Rows.RemoveAt(rowIndex);
+                        MessageBox.Show("Usuario eliminado correctamente");
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        MessageBox.Show("No tiene permisos para eliminar este usuario");
+                    }
+                    else
+                    {
+                        var error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error al eliminar usuario: {error}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error de conexión: {ex.Message}");
+                }
+            }
+        }
         protected virtual async void BtnViewCourses_Click(object sender, EventArgs e)
         {
             try
@@ -114,72 +277,6 @@ namespace FrontendWindowsForm
                 MessageBox.Show($"Error: {ex.Message}");
             }
         }
-
-        protected virtual async void BtnViewSpecialties_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var response = await _client.GetAsync("api/specialties");
-                if (response.IsSuccessStatusCode)
-                {
-                    var specialties = await response.Content.ReadFromJsonAsync<List<SpecialtyDTO>>();
-                    DisplaySpecialties(specialties);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}");
-            }
-        }
-
-        protected virtual async void BtnViewPlans_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var response = await _client.GetAsync("api/curricularplans");
-                if (response.IsSuccessStatusCode)
-                {
-                    var plans = await response.Content.ReadFromJsonAsync<List<CurricularPlanReportDTO>>();
-                    DisplayPlans(plans);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}");
-            }
-        }
-
-        protected virtual async void BtnViewCommissions_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var response = await _client.GetAsync("api/commissions");
-                if (response.IsSuccessStatusCode)
-                {
-                    var commissions = await response.Content.ReadFromJsonAsync<List<CommissionDTO>>();
-                    DisplayCommissions(commissions);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}");
-            }
-        }
-
-        protected virtual async void BtnViewGrades_Click(object sender, EventArgs e)
-        {
-            // Implementación específica por rol
-            await LoadGrades();
-        }
-
-        // Métodos virtuales que se pueden sobrescribir
-        protected virtual async Task LoadGrades()
-        {
-            // Implementación base - puede ser sobrescrita
-            MessageBox.Show("Funcionalidad de notas no disponible para este rol");
-        }
-
-        // Métodos para mostrar datos en el panel principal
         protected virtual void DisplayCourses(List<CourseDTO> courses)
         {
             ClearMainPanel();
@@ -207,31 +304,22 @@ namespace FrontendWindowsForm
 
             mainPanel.Controls.Add(listView);
         }
-
-        protected virtual void DisplaySpecialties(List<SpecialtyDTO> specialties)
+        protected virtual async void BtnViewCommissions_Click(object sender, EventArgs e)
         {
-            ClearMainPanel();
-            var listBox = new ListBox { Dock = DockStyle.Fill };
-            listBox.Items.AddRange(specialties.Select(s => s.Name).ToArray());
-            mainPanel.Controls.Add(listBox);
-        }
-
-        protected virtual void DisplayPlans(List<CurricularPlanReportDTO> plans)
-        {
-            ClearMainPanel();
-            var grid = new DataGridView
+            try
             {
-                Dock = DockStyle.Fill,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-
-            var bindingSource = new BindingSource();
-            bindingSource.DataSource = plans;
-            grid.DataSource = bindingSource;
-
-            mainPanel.Controls.Add(grid);
+                var response = await _client.GetAsync("api/Commissions");
+                if (response.IsSuccessStatusCode)
+                {
+                    var commissions = await response.Content.ReadFromJsonAsync<List<CommissionDTO>>();
+                    DisplayCommissions(commissions);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}");
+            }
         }
-
         protected virtual void DisplayCommissions(List<CommissionDTO> commissions)
         {
             ClearMainPanel();
@@ -250,10 +338,10 @@ namespace FrontendWindowsForm
 
             mainPanel.Controls.Add(treeView);
         }
-
         protected void ClearMainPanel()
         {
             mainPanel.Controls.Clear();
+
         }
     }
 }
