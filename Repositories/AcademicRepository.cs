@@ -1,13 +1,47 @@
-﻿using Models.Entities;
+﻿using Data;
+using Models.Entities;
 using Repositories.Interfaces;
 
 namespace Repositories
 {
-    internal class AcademicRepository
+    public class AcademicRepository : IAcademicRepository
     {
-        public List<Specialty> GetSpecialties()
+        public List<Course> GetCourses()
         {
-            return Data.InMemory.specialtiesSample;
+            return InMemory.coursesSample;
+        }
+        public Course GetCourse(int id)
+        {
+            return InMemory.coursesSample.FirstOrDefault(c => c.Id == id)
+            ?? throw new KeyNotFoundException("Curso no encontrado");
+        }
+        public void DeleteCourse(int id)
+        {
+            var course = GetCourse(id);
+            InMemory.coursesSample.Remove(course);
+        }
+        public void AddCourse(Course course)
+        {
+            if (InMemory.coursesSample.Any(c => c.Name.Equals(course.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("El curso ya existe.");
+            }
+            course.Id = InMemory.coursesSample.Max(c => c.Id) + 1; // Assign a new ID
+            InMemory.coursesSample.Add(course);
+        }
+        public void UpdateCourse(Course course)
+        {
+            var existingCourse = GetCourse(course.Id);
+            if (existingCourse == null)
+            {
+                throw new KeyNotFoundException("Curso no encontrado");
+            }
+            // Update properties
+            existingCourse.Name = course.Name;
+            existingCourse.AcademicPeriod = course.AcademicPeriod;
+            existingCourse.SpecialtiesLinked = course.SpecialtiesLinked;
+            existingCourse.CurricularPlan = course.CurricularPlan;
+            // No need to save changes in InMemory, as it's already updated in the list
         }
     }
 }

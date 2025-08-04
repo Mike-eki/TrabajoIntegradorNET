@@ -54,6 +54,7 @@ namespace WebAPI.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
         [HttpDelete("{id}")]
         public IActionResult Delete(int id) 
         {

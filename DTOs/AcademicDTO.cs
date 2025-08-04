@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Models.Enums;
+using Models.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,8 +21,11 @@ namespace DTOs
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
-        public int Credits { get; set; }
-        public string AcademicPeriod { get; set; } = null!; // Ej: "Primer Cuatrimestre"
+
+        public AcademicPeriodType AcademicPeriod;
+        public List<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
+        public CurricularPlanType CurriculumPlan { get; set; }
+
     }
 
     // Para mostrar comisiones con horario y profesor

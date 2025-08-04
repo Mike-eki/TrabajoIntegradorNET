@@ -8,7 +8,6 @@ namespace Data
         public static List<User> usersSample;
         public static List<Specialty> specialtiesSample;
         public static List<Course> coursesSample;
-        public static List<CurricularPlan> curricularPlansSample;
         public static List<Commission> commissionsSample;
         public static List<Enrollment> enrollmentsSample;
         public static List<Grade> gradesSample;
@@ -52,36 +51,27 @@ namespace Data
 
             coursesSample = new List<Course>
             {
-                new Course { Id = 1, Name = "Programación I", CurricularPlanId = 1 },
-                new Course { Id = 2, Name = "Programación II", CurricularPlanId = 1 },
-                new Course { Id = 3, Name = "Bases de Datos", CurricularPlanId = 1 },
-                new Course { Id = 4, Name = "Redes de Computadoras", CurricularPlanId = 1 },
-                new Course { Id = 5, Name = "Matemáticas Discretas", CurricularPlanId = 1 },
-                new Course { Id = 6, Name = "Algoritmos y Estructuras de Datos", CurricularPlanId = 1 },
-                new Course { Id = 7, Name = "Sistemas Operativos", CurricularPlanId = 1 },
-                new Course { Id = 8, Name = "Ingeniería de Software", CurricularPlanId = 1 },
-                new Course { Id = 9, Name = "Inteligencia Artificial", CurricularPlanId = 1 },
-                new Course { Id = 10, Name = "Ciberseguridad", CurricularPlanId = 1 },
-                new Course { Id = 11, Name = "Desarrollo Web", CurricularPlanId = 1 },
-                new Course { Id = 12, Name = "Desarrollo Móvil", CurricularPlanId = 1 },
-                new Course { Id = 13, Name = "Computación en la Nube", CurricularPlanId = 1 },
-                new Course { Id = 14, Name = "Big Data", CurricularPlanId = 1 },
-                new Course { Id = 15, Name = "Blockchain", CurricularPlanId = 1 },
-                new Course { Id = 16, Name = "Realidad Aumentada", CurricularPlanId = 1 },
-                new Course { Id = 17, Name = "Robótica", CurricularPlanId = 1 },
-                new Course { Id = 18, Name = "Sistemas Embebidos", CurricularPlanId = 1 },
-                new Course { Id = 19, Name = "Ingeniería de Datos", CurricularPlanId = 1 },
-                new Course { Id = 20, Name = "Desarrollo de Videojuegos", CurricularPlanId = 1 }
+                new Course { Id = 1, Name = "Programación I", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year, SpecialtiesLinked = new List<Specialty>() { specialtiesSample.Find(s => s.Id == 1)} },
+                new Course { Id = 2, Name = "Programación II", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 3, Name = "Bases de Datos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 4, Name = "Redes de Computadoras", CurricularPlan = CurricularPlanType.Basic  , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 5, Name = "Matemáticas Discretas", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Semester},
+                new Course { Id = 6, Name = "Algoritmos y Estructuras de Datos", CurricularPlan = CurricularPlanType.Basic, AcademicPeriod = AcademicPeriodType.Semester},
+                new Course { Id = 7, Name = "Sistemas Operativos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Semester},
+                new Course { Id = 8, Name = "Ingeniería de Software", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 9, Name = "Inteligencia Artificial", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 10, Name = "Ciberseguridad", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 11, Name = "Desarrollo Web", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 12, Name = "Desarrollo Móvil", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 13, Name = "Computación en la Nube", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 14, Name = "Big Data", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 15, Name = "Blockchain", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 16, Name = "Realidad Aumentada", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 17, Name = "Robótica", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 18, Name = "Sistemas Embebidos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 19, Name = "Ingeniería de Datos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 20, Name = "Desarrollo de Videojuegos", CurricularPlan = CurricularPlanType.Basic  , AcademicPeriod = AcademicPeriodType.Year}
             };
-
-            // Sample curricular plans
-
-            curricularPlansSample = new List<CurricularPlan>
-            {
-                new CurricularPlan { Id = 1, PlanName = "Plan 2023", CourseId = 1, AcademicPeriod = "anual" },
-                new CurricularPlan { Id = 2, PlanName = "Plan 2023", CourseId = 2, AcademicPeriod = "semester" },
-            };
-
 
             // Sample commissions
 

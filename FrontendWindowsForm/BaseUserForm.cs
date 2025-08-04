@@ -35,7 +35,19 @@ namespace FrontendWindowsForm
             public List<UserDTO> Users { get; set; }
             public string message { get; set; }
         }
-        // Métodos comunes que pueden ser sobrescritos
+
+        public class ResponseCourseList
+        {
+            public List<CourseDTO> Courses { get; set; }
+            public string message { get; set; }
+        }
+
+        protected void ClearMainPanel()
+        {
+            mainPanel.Controls.Clear();
+
+        }
+        // User methods
         protected virtual void BtnLogout_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("¿Está seguro que desea cerrar sesión?",
@@ -163,7 +175,8 @@ namespace FrontendWindowsForm
             }
 
             // Manejar clics en botones
-            dataGridView.CellClick += async (sender, e) => {
+            dataGridView.CellClick += async (sender, e) =>
+            {
                 if (e.RowIndex < 0) return;
 
                 DataGridView dgv = sender as DataGridView;
@@ -184,8 +197,48 @@ namespace FrontendWindowsForm
 
             mainPanel.Controls.Add(dataGridView);
         }
+        protected virtual void BtnCreateUser_Click(object? sender, EventArgs e)
+        {
+            // Solo administradores pueden crear usuarios, por ejemplo
+            // Puedes ajustar esta lógica según tus roles
+            if (_currentUser.RoleName != RoleType.Administrator)
+            {
+                MessageBox.Show("No tiene permisos para crear usuarios.");
+                return;
+            }
 
-        // Método genérico para editar cualquier usuario
+            try
+            {
+                // Definir propiedades de solo lectura (si las hubiera, normalmente ninguna para creación)
+                var readOnlyProps = new List<string>() { "Id" }; // O ["Id"] si el ID se genera en el servidor
+
+                // Crear una instancia vacía del DTO para definir el tipo
+                var newUserTemplate = new RegisterUserDTO();
+
+                // Crear el formulario genérico para creación
+                // Pasamos el Tipo del objeto, no una instancia
+                var createForm = new GenericEditForm(
+                    _client,
+                    typeof(RegisterUserDTO),         // Tipo de objeto a crear
+                    "api/Users/register",             // Endpoint de la API para creación
+                    readOnlyProps            // Propiedades de solo lectura (opcional)
+                );
+
+                // Suscribirse al evento para refrescar la lista si se crea exitosamente
+                createForm.ItemSaved += (s, createdItem) =>
+                {
+                    MessageBox.Show("Usuario creado exitosamente. Refresque la lista para verlo.");
+                    // Opcionalmente, puedes volver a cargar la lista de usuarios aquí
+                    // BtnViewUsers_Click(this, EventArgs.Empty);
+                };
+
+                createForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir formulario de creación: {ex.Message}");
+            }
+        }
         private async Task EditUserGeneric(UserDTO user, DataGridView dataGridView, int rowIndex)
         {
             try
@@ -200,7 +253,8 @@ namespace FrontendWindowsForm
                     readOnlyProps
                 );
 
-                editForm.ItemSaved += (s, updatedItem) => {
+                editForm.ItemSaved += (s, updatedItem) =>
+                {
                     var updatedUser = updatedItem as UserDTO;
                     if (updatedUser != null)
                     {
@@ -262,56 +316,24 @@ namespace FrontendWindowsForm
                 }
             }
         }
-        protected virtual void BtnCreateUser_Click(object? sender, EventArgs e)
-        {
-            // Solo administradores pueden crear usuarios, por ejemplo
-            // Puedes ajustar esta lógica según tus roles
-            if (_currentUser.RoleName != RoleType.Administrator)
-            {
-                MessageBox.Show("No tiene permisos para crear usuarios.");
-                return;
-            }
 
-            try
-            {
-                // Definir propiedades de solo lectura (si las hubiera, normalmente ninguna para creación)
-                var readOnlyProps = new List<string>() { "Id" }; // O ["Id"] si el ID se genera en el servidor
-
-                // Crear una instancia vacía del DTO para definir el tipo
-                var newUserTemplate = new RegisterUserDTO();
-
-                // Crear el formulario genérico para creación
-                // Pasamos el Tipo del objeto, no una instancia
-                var createForm = new GenericEditForm(
-                    _client,
-                    typeof(RegisterUserDTO),         // Tipo de objeto a crear
-                    "api/Users/register",             // Endpoint de la API para creación
-                    readOnlyProps            // Propiedades de solo lectura (opcional)
-                );
-
-                // Suscribirse al evento para refrescar la lista si se crea exitosamente
-                createForm.ItemSaved += (s, createdItem) => {
-                    MessageBox.Show("Usuario creado exitosamente. Refresque la lista para verlo.");
-                    // Opcionalmente, puedes volver a cargar la lista de usuarios aquí
-                    // BtnViewUsers_Click(this, EventArgs.Empty); 
-                };
-
-                createForm.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al abrir formulario de creación: {ex.Message}");
-            }
-        }
+        // Course methods
         protected virtual async void BtnViewCourses_Click(object sender, EventArgs e)
         {
             try
             {
-                var response = await _client.GetAsync("api/Courses");
+                var response = await _client.GetAsync("api/Course");
                 if (response.IsSuccessStatusCode)
                 {
-                    var courses = await response.Content.ReadFromJsonAsync<List<CourseDTO>>();
-                    DisplayCourses(courses);
+                    var result = response.Content.ReadFromJsonAsync<ResponseCourseList>().Result;
+                    if (result != null && result.Courses != null)
+                    {
+                        DisplayCourses(result.Courses);
+                    }
+                    else
+                    {
+                        MessageBox.Show("No se pudieron obtener los cursos.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -322,30 +344,303 @@ namespace FrontendWindowsForm
         protected virtual void DisplayCourses(List<CourseDTO> courses)
         {
             ClearMainPanel();
-            var listView = new ListView
+
+            var dataGridView = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                View = View.Details
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                ReadOnly = true,
+                // ✅ Configuración adicional para mejor apariencia
+                AllowUserToResizeRows = false,
+                RowTemplate = { Height = 30 }
             };
-            listView.Columns.Add("ID", 50);
-            listView.Columns.Add("Nombre", 200);
-            listView.Columns.Add("Créditos", 80);
-            listView.Columns.Add("Período Académico", 150);
 
+            // Configurar columnas
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Id",
+                HeaderText = "ID",
+                FillWeight = 8
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Name",
+                HeaderText = "Nombre",
+                FillWeight = 25
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "AcademicPeriod",
+                HeaderText = "Período Académico",
+                FillWeight = 20
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "CurriculumPlan",
+                HeaderText = "Plan Curricular",
+                FillWeight = 20
+            });
+
+            // Columna para contar especialidades
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "SpecialtiesCount",
+                HeaderText = "N° Especialidades",
+                FillWeight = 12
+            });
+
+            // Columna de botón para ver especialidades
+            DataGridViewButtonColumn viewSpecialtiesButton = new DataGridViewButtonColumn
+            {
+                Name = "ViewSpecialties",
+                HeaderText = "🔍 Ver",
+                Text = "🔍",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 8
+            };
+            dataGridView.Columns.Add(viewSpecialtiesButton);
+
+            // Columnas de botones para Editar y Borrar
+            DataGridViewButtonColumn editButton = new DataGridViewButtonColumn
+            {
+                Name = "Edit",
+                HeaderText = "✏️",
+                Text = "✏️",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 8
+            };
+            dataGridView.Columns.Add(editButton);
+
+            DataGridViewButtonColumn deleteButton = new DataGridViewButtonColumn
+            {
+                Name = "Delete",
+                HeaderText = "🗑️",
+                Text = "🗑️",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 8
+            };
+            dataGridView.Columns.Add(deleteButton);
+
+            // Llenar datos
             foreach (var course in courses)
             {
-                var item = new ListViewItem(new[]
-                {
-                    course.Id.ToString(),
-                    course.Name,
-                    course.Credits.ToString(),
-                    course.AcademicPeriod
-                });
-                listView.Items.Add(item);
+                int rowIndex = dataGridView.Rows.Add();
+                DataGridViewRow row = dataGridView.Rows[rowIndex];
+
+                row.Cells["Id"].Value = course.Id;
+                row.Cells["Name"].Value = course.Name;
+                row.Cells["AcademicPeriod"].Value = course.AcademicPeriod.ToString();
+                row.Cells["CurriculumPlan"].Value = course.CurriculumPlan.ToString();
+                row.Cells["SpecialtiesCount"].Value = course.SpecialtiesLinked.Count;
+
+                // Guardar el objeto Course en la fila
+                row.Tag = course;
             }
 
-            mainPanel.Controls.Add(listView);
+            // Manejar clics en botones
+            dataGridView.CellClick += async (sender, e) =>
+            {
+                if (e.RowIndex < 0) return;
+
+                DataGridView dgv = sender as DataGridView;
+                DataGridViewRow row = dgv.Rows[e.RowIndex];
+                CourseDTO course = row.Tag as CourseDTO;
+
+                if (course == null) return;
+
+                // ✅ Determinar qué botón fue clickeado
+                if (e.ColumnIndex == dgv.Columns["ViewSpecialties"].Index)
+                {
+                    ShowSpecialtiesDetail(course);
+                }
+                else if (e.ColumnIndex == dgv.Columns["Edit"].Index)
+                {
+                    await EditCourse(course, dgv, e.RowIndex);
+                }
+                else if (e.ColumnIndex == dgv.Columns["Delete"].Index)
+                {
+                    await DeleteCourse(course, dgv, e.RowIndex);
+                }
+            };
+
+            mainPanel.Controls.Add(dataGridView);
         }
+
+        // Método para mostrar detalle de especialidades
+        private void ShowSpecialtiesDetail(CourseDTO course)
+        {
+            var detailForm = new Form
+            {
+                Text = $"Especialidades para {course.Name}",
+                Size = new Size(500, 400),
+                StartPosition = FormStartPosition.CenterParent,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+
+            // Panel principal
+            var mainPanel = new Panel
+            {
+                Dock = DockStyle.Fill
+            };
+
+            // ListBox para mostrar especialidades
+            var listBox = new ListBox
+            {
+                Dock = DockStyle.Top,
+                Height = 250
+            };
+
+            // Agregar especialidades a la lista
+            foreach (var specialty in course.SpecialtiesLinked)
+            {
+                listBox.Items.Add(specialty.Name);
+            }
+
+            // Panel de botones
+            var buttonPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 60
+            };
+
+            // Botones
+            var btnAdd = new Button
+            {
+                Text = "Agregar",
+                Location = new Point(10, 15),
+                Size = new Size(80, 30)
+            };
+
+            var btnRemove = new Button
+            {
+                Text = "Quitar",
+                Location = new Point(100, 15),
+                Size = new Size(80, 30)
+            };
+
+            var btnClose = new Button
+            {
+                Text = "Cerrar",
+                Location = new Point(400, 15),
+                Size = new Size(80, 30)
+            };
+
+            // Eventos de botones
+            btnAdd.Click += (s, e) => {
+                // Aquí iría la lógica para agregar una especialidad
+                MessageBox.Show("Funcionalidad de agregar especialidad aún no implementada.\n\nPara implementarla, necesitarías:\n1. Obtener lista de todas las especialidades\n2. Mostrar diálogo de selección\n3. Llamar a API para vincular especialidad al curso", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+
+            btnRemove.Click += (s, e) => {
+                if (listBox.SelectedItem != null)
+                {
+                    var selectedSpecialty = listBox.SelectedItem.ToString();
+                    // Aquí iría la lógica para quitar una especialidad
+                    MessageBox.Show($"Funcionalidad de quitar '{selectedSpecialty}' aún no implementada.\n\nPara implementarla, necesitarías llamar a una API que desvincule la especialidad del curso.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Seleccione una especialidad para quitar.");
+                }
+            };
+
+            btnClose.Click += (s, e) => {
+                detailForm.Close();
+            };
+
+            // Agregar controles
+            buttonPanel.Controls.AddRange(new Control[] { btnAdd, btnRemove, btnClose });
+            mainPanel.Controls.AddRange(new Control[] { listBox, buttonPanel });
+            detailForm.Controls.Add(mainPanel);
+
+            detailForm.ShowDialog();
+        }
+
+        // Método para editar un curso
+        private async Task EditCourse(CourseDTO course, DataGridView dataGridView, int rowIndex)
+        {
+            try
+            {
+                // Propiedades que no se pueden editar (ajusta según tus necesidades)
+                var readOnlyProps = new List<string> { "Id" }; // ID normalmente es de solo lectura
+
+                var editForm = new GenericEditForm(
+                    _client,
+                    course,
+                    $"api/Course/{course.Id}", // Asegúrate que este endpoint sea correcto
+                    readOnlyProps
+                );
+
+                editForm.ItemSaved += (s, updatedItem) => {
+                    var updatedCourse = updatedItem as CourseDTO;
+                    if (updatedCourse != null)
+                    {
+                        // Actualizar fila en el DataGridView
+                        var row = dataGridView.Rows[rowIndex];
+                        row.Cells["Name"].Value = updatedCourse.Name;
+                        row.Cells["AcademicPeriod"].Value = updatedCourse.AcademicPeriod.ToString();
+                        row.Cells["CurriculumPlan"].Value = updatedCourse.CurriculumPlan.ToString();
+                        row.Cells["SpecialtiesCount"].Value = updatedCourse.SpecialtiesLinked.Count;
+                        row.Tag = updatedCourse; // Actualizar objeto en Tag
+
+                        MessageBox.Show("Curso actualizado correctamente");
+                    }
+                };
+
+                editForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al editar curso: {ex.Message}");
+            }
+        }
+
+        // Método para eliminar un curso
+        private async Task DeleteCourse(CourseDTO course, DataGridView dataGridView, int rowIndex)
+        {
+            var result = MessageBox.Show(
+                $"¿Está seguro que desea eliminar el curso '{course.Name}'?",
+                "Confirmar eliminación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    var response = await _client.DeleteAsync($"api/Course/{course.Id}");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        dataGridView.Rows.RemoveAt(rowIndex);
+                        MessageBox.Show("Curso eliminado correctamente");
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        MessageBox.Show("No tiene permisos para eliminar este curso");
+                    }
+                    else
+                    {
+                        var error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error al eliminar curso: {error}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error de conexión: {ex.Message}");
+                }
+            }
+        }
+
+        // Commission methods
         protected virtual async void BtnViewCommissions_Click(object sender, EventArgs e)
         {
             try
@@ -380,10 +675,7 @@ namespace FrontendWindowsForm
 
             mainPanel.Controls.Add(treeView);
         }
-        protected void ClearMainPanel()
-        {
-            mainPanel.Controls.Clear();
 
-        }
+
     }
 }
