@@ -11,10 +11,5 @@ namespace Models.Entities
         [Required]
         [MaxLength(100)]
         public string Name { get; set; } = null!;
-
-        // Navegación
-        //public virtual ICollection<StudentSpecialty> UserSpecialties { get; set; } = new List<StudentSpecialty>();
-        //public virtual ICollection<ProfessorSpecialty> ProfessorSpecialties { get; set; } = new List<ProfessorSpecialty>();
-        //public virtual ICollection<SpecialtyCourse> SpecialtyCourses { get; set; } = new List<SpecialtyCourse>();
     }
 }

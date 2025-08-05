@@ -169,7 +169,10 @@ namespace FrontendWindowsForm.Features
             }
             else if (control is ComboBox comboBox)
             {
-                comboBox.SelectedItem = value?.ToString();
+                if (value != null)
+                {
+                    comboBox.SelectedItem = value.ToString();
+                }
             }
         }
 
@@ -179,6 +182,33 @@ namespace FrontendWindowsForm.Features
             {
                 // Crear instancia del objeto a guardar
                 var itemToSave = Activator.CreateInstance(_itemType);
+
+                // Si es edición, copiar propiedades que no se editan desde el objeto original
+                if (!_isCreation && _item != null)
+                {
+                    // Obtener propiedades del tipo original
+                    var properties = _itemType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                              .Where(p => p.CanRead && p.CanWrite);
+
+                    foreach (var prop in properties)
+                    {
+                        // Si la propiedad no tiene un control asociado en el formulario,
+                        // copiar su valor desde el objeto original
+                        if (!_editControls.ContainsKey(prop.Name))
+                        {
+                            try
+                            {
+                                var originalValue = prop.GetValue(_item);
+                                prop.SetValue(itemToSave, originalValue);
+                            }
+                            catch (Exception ex)
+                            {
+                                // Registrar o manejar si no se puede copiar una propiedad específica
+                                System.Diagnostics.Debug.WriteLine($"No se pudo copiar la propiedad {prop.Name}: {ex.Message}");
+                            }
+                        }
+                    }
+                }
 
                 foreach (var kvp in _editControls)
                 {

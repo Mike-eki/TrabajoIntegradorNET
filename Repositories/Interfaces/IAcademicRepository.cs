@@ -11,9 +11,13 @@ namespace Repositories.Interfaces
     {
         List<Course> GetCourses();
         Course GetCourse(int id);
+        void CreateCourse(Course course);
         void DeleteCourse(int id);
         void AddCourse(Course course);
         void UpdateCourse(Course course);
+
+        List<Specialty> GetSpecialties();
+        void AddSpecialty(Specialty specialty);
 
     }
 }

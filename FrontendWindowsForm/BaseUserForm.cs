@@ -1,6 +1,7 @@
 ﻿using DTOs;
 using FrontendWindowsForm.Features;
 using Models.Enums;
+using Models.Entities;
 using System.Net.Http.Json;
 using System.Windows.Forms;
 
@@ -27,7 +28,13 @@ namespace FrontendWindowsForm
             btnCreateUser.Click += BtnCreateUser_Click;
             btnLogout.Click += BtnLogout_Click;
             btnViewCourses.Click += BtnViewCourses_Click;
+            btnCreateCourse.Click += BtnCreateCourse_Click;
             btnViewCommissions.Click += BtnViewCommissions_Click;
+        }
+
+        private void BtnCreateCourse_Click1(object? sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         public class ResponseUserList
@@ -39,6 +46,12 @@ namespace FrontendWindowsForm
         public class ResponseCourseList
         {
             public List<CourseDTO> Courses { get; set; }
+            public string message { get; set; }
+        }
+
+        public class ResponseSpecialtyList
+        {
+            public List<SpecialtyDTO> Specialties { get; set; }
             public string message { get; set; }
         }
 
@@ -436,9 +449,9 @@ namespace FrontendWindowsForm
 
                 row.Cells["Id"].Value = course.Id;
                 row.Cells["Name"].Value = course.Name;
-                row.Cells["AcademicPeriod"].Value = course.AcademicPeriod.ToString();
-                row.Cells["CurriculumPlan"].Value = course.CurriculumPlan.ToString();
-                row.Cells["SpecialtiesCount"].Value = course.SpecialtiesLinked.Count;
+                row.Cells["AcademicPeriod"].Value = course.AcademicPeriod;
+                row.Cells["CurriculumPlan"].Value = course.CurriculumPlan;
+                row.Cells["SpecialtiesCount"].Value = course.SpecialtiesLinked?.Count ?? 0;
 
                 // Guardar el objeto Course en la fila
                 row.Tag = course;
@@ -473,82 +486,169 @@ namespace FrontendWindowsForm
             mainPanel.Controls.Add(dataGridView);
         }
 
-        // Método para mostrar detalle de especialidades
-        private void ShowSpecialtiesDetail(CourseDTO course)
+        // Método simplificado para gestionar especialidades de un curso
+        private async void ShowSpecialtiesDetail(CourseDTO course)
         {
             var detailForm = new Form
             {
-                Text = $"Especialidades para {course.Name}",
-                Size = new Size(500, 400),
+                Text = $"Gestionar Especialidades para {course.Name}",
+                Size = new Size(600, 500),
                 StartPosition = FormStartPosition.CenterParent,
                 MaximizeBox = false,
                 MinimizeBox = false
             };
 
-            // Panel principal
-            var mainPanel = new Panel
+            // Etiqueta informativa
+            var lblTitle = new Label
             {
-                Dock = DockStyle.Fill
+                Text = $"Seleccionar Especialidades para '{course.Name}':",
+                Location = new Point(10, 10),
+                Size = new Size(500, 20),
+                Font = new Font(this.Font, FontStyle.Bold)
             };
 
-            // ListBox para mostrar especialidades
-            var listBox = new ListBox
+            // CheckedListBox para mostrar todas las especialidades y permitir selección
+            var checkedListBox = new CheckedListBox
             {
-                Dock = DockStyle.Top,
-                Height = 250
+                Location = new Point(10, 40),
+                Size = new Size(560, 350),
+                CheckOnClick = true // Permite marcar/desmarcar al hacer clic
             };
 
-            // Agregar especialidades a la lista
-            foreach (var specialty in course.SpecialtiesLinked)
-            {
-                listBox.Items.Add(specialty.Name);
-            }
+            checkedListBox.DisplayMember = "Name";
 
             // Panel de botones
-            var buttonPanel = new Panel
+            var panelButtons = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 60
+                Height = 50
             };
 
-            // Botones
-            var btnAdd = new Button
+            var btnSave = new Button
             {
-                Text = "Agregar",
-                Location = new Point(10, 15),
+                Text = "Guardar",
+                Location = new Point(200, 10),
                 Size = new Size(80, 30)
             };
 
-            var btnRemove = new Button
+            var btnCancel = new Button
             {
-                Text = "Quitar",
-                Location = new Point(100, 15),
+                Text = "Cancelar",
+                Location = new Point(300, 10),
                 Size = new Size(80, 30)
             };
 
             var btnClose = new Button
             {
                 Text = "Cerrar",
-                Location = new Point(400, 15),
+                Location = new Point(400, 10),
                 Size = new Size(80, 30)
             };
 
-            // Eventos de botones
-            btnAdd.Click += (s, e) => {
-                // Aquí iría la lógica para agregar una especialidad
-                MessageBox.Show("Funcionalidad de agregar especialidad aún no implementada.\n\nPara implementarla, necesitarías:\n1. Obtener lista de todas las especialidades\n2. Mostrar diálogo de selección\n3. Llamar a API para vincular especialidad al curso", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            };
+            // Variable para almacenar todas las especialidades disponibles
+            List<SpecialtyDTO> allSpecialties = new List<SpecialtyDTO>();
 
-            btnRemove.Click += (s, e) => {
-                if (listBox.SelectedItem != null)
+            try
+            {
+                // 1. Obtener todas las especialidades del servidor
+                var response = await _client.GetAsync("api/Specialty"); // Asegúrate que este endpoint sea correcto
+                if (response.IsSuccessStatusCode)
                 {
-                    var selectedSpecialty = listBox.SelectedItem.ToString();
-                    // Aquí iría la lógica para quitar una especialidad
-                    MessageBox.Show($"Funcionalidad de quitar '{selectedSpecialty}' aún no implementada.\n\nPara implementarla, necesitarías llamar a una API que desvincule la especialidad del curso.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Asumiendo que la API devuelve una lista directamente
+                    // Si devuelve un objeto contenedor, ajusta según tu DTO (por ejemplo, ResponseSpecialtyList)
+                    var result =  response.Content.ReadFromJsonAsync<ResponseSpecialtyList>().Result;
+                    foreach (var specialty in result.Specialties)
+                    {
+                        allSpecialties.Add(specialty);
+                    }
                 }
                 else
                 {
-                    MessageBox.Show("Seleccione una especialidad para quitar.");
+                    MessageBox.Show($"Error al obtener especialidades. Código: {response.StatusCode}");
+                    detailForm.Close();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error de red al obtener especialidades: {ex.Message}");
+                detailForm.Close();
+                return;
+            }
+
+            // 2. Llenar el CheckedListBox
+            var linkedSpecialtyIds = new HashSet<int>(course.SpecialtiesLinked.Select(s => s.Id));
+
+            foreach (var specialty in allSpecialties)
+            {
+                int index = checkedListBox.Items.Add(specialty); // Agrega el objeto completo
+                                                                 // Marcar como seleccionado si ya está vinculado al curso
+                if (linkedSpecialtyIds.Contains(specialty.Id))
+                {
+                    checkedListBox.SetItemChecked(index, true);
+                }
+            }
+
+            // 3. Configurar eventos de botones
+            btnSave.Click += async (s, e) => {
+                try
+                {
+                    // 4. Crear una nueva lista con las especialidades seleccionadas
+                    var selectedSpecialties = new List<Specialty>();
+                    foreach (SpecialtyDTO specialtyDTO in checkedListBox.CheckedItems)
+                    {
+                        selectedSpecialties.Add(new Specialty 
+                        { 
+                            Id = specialtyDTO.Id,
+                            Name = specialtyDTO.Name
+                        });
+                    }
+
+
+                    // 5. Crear un objeto CourseDTO actualizado
+                    // Es crucial copiar las propiedades existentes del curso original
+                    var updatedCourse = new CourseDTO
+                    {
+                        Id = course.Id,
+                        Name = course.Name,
+                        AcademicPeriod = course.AcademicPeriod,
+                        CurriculumPlan = course.CurriculumPlan,
+                        SpecialtiesLinked = selectedSpecialties // La lista actualizada
+                    };
+
+                    // 6. Enviar la actualización al servidor
+                    var response = await _client.PutAsJsonAsync($"api/Course/{course.Id}", updatedCourse);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Especialidades actualizadas correctamente.");
+                        detailForm.DialogResult = DialogResult.OK; // Opcional, para comunicación con formulario padre
+                        detailForm.Close();
+                        // Opcional: Actualizar la lista de cursos en la pantalla principal
+                        // BtnViewCourses_Click(this, EventArgs.Empty);
+                    }
+                    else
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error al actualizar el curso: {response.StatusCode}\nDetalles: {errorContent}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al guardar cambios: {ex.Message}");
+                }
+            };
+
+            btnCancel.Click += (s, e) => {
+                // 7. Revertir a la selección original
+                checkedListBox.Items.Clear();
+                foreach (var specialty in allSpecialties)
+                {
+                    int index = checkedListBox.Items.Add(specialty);
+                    if (linkedSpecialtyIds.Contains(specialty.Id))
+                    {
+                        checkedListBox.SetItemChecked(index, true);
+                    }
                 }
             };
 
@@ -556,15 +656,28 @@ namespace FrontendWindowsForm
                 detailForm.Close();
             };
 
-            // Agregar controles
-            buttonPanel.Controls.AddRange(new Control[] { btnAdd, btnRemove, btnClose });
-            mainPanel.Controls.AddRange(new Control[] { listBox, buttonPanel });
-            detailForm.Controls.Add(mainPanel);
+            // 8. Agregar controles al formulario
+            detailForm.Controls.AddRange(new Control[] { lblTitle, checkedListBox, panelButtons });
+            panelButtons.Controls.AddRange(new Control[] { btnSave, btnCancel, btnClose });
 
             detailForm.ShowDialog();
         }
 
-        // Método para editar un curso
+        // Clase auxiliar para almacenar SpecialtyDTO en ListBox y mostrar el nombre
+        public class SpecialtyItem
+        {
+            public SpecialtyDTO Specialty { get; set; }
+
+            public SpecialtyItem(SpecialtyDTO specialty)
+            {
+                Specialty = specialty;
+            }
+
+            public override string ToString()
+            {
+                return Specialty.Name;
+            }
+        }
         private async Task EditCourse(CourseDTO course, DataGridView dataGridView, int rowIndex)
         {
             try
@@ -586,9 +699,9 @@ namespace FrontendWindowsForm
                         // Actualizar fila en el DataGridView
                         var row = dataGridView.Rows[rowIndex];
                         row.Cells["Name"].Value = updatedCourse.Name;
-                        row.Cells["AcademicPeriod"].Value = updatedCourse.AcademicPeriod.ToString();
-                        row.Cells["CurriculumPlan"].Value = updatedCourse.CurriculumPlan.ToString();
-                        row.Cells["SpecialtiesCount"].Value = updatedCourse.SpecialtiesLinked.Count;
+                        row.Cells["AcademicPeriod"].Value = updatedCourse.AcademicPeriod;
+                        row.Cells["CurriculumPlan"].Value = updatedCourse.CurriculumPlan;
+                        row.Cells["SpecialtiesCount"].Value = updatedCourse.SpecialtiesLinked?.Count ?? 0;
                         row.Tag = updatedCourse; // Actualizar objeto en Tag
 
                         MessageBox.Show("Curso actualizado correctamente");
@@ -602,8 +715,6 @@ namespace FrontendWindowsForm
                 MessageBox.Show($"Error al editar curso: {ex.Message}");
             }
         }
-
-        // Método para eliminar un curso
         private async Task DeleteCourse(CourseDTO course, DataGridView dataGridView, int rowIndex)
         {
             var result = MessageBox.Show(
@@ -637,6 +748,36 @@ namespace FrontendWindowsForm
                 {
                     MessageBox.Show($"Error de conexión: {ex.Message}");
                 }
+            }
+        }
+
+        private void BtnCreateCourse_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Definir propiedades de solo lectura (si las hubiera, normalmente el ID se genera en el servidor)
+                var readOnlyProps = new List<string>() { "Id" }; // O ["Id"] si el backend no lo permite editable
+
+                // Crear el formulario genérico para creación de un CourseDTO
+                var createForm = new GenericEditForm(
+                    _client,
+                    typeof(CourseDTO),       // Tipo de objeto a crear
+                    "api/Course",           // Endpoint de la API para creación (ajusta si es diferente)
+                    readOnlyProps            // Propiedades de solo lectura
+                );
+
+                // Opcional: Suscribirse al evento para refrescar la lista si se crea exitosamente
+                createForm.ItemSaved += (s, createdItem) => {
+                    MessageBox.Show("Curso creado exitosamente.");
+                    // Opcional: Refrescar la lista de cursos
+                    BtnViewCourses_Click(this, EventArgs.Empty); // Esto volverá a cargar la lista
+                };
+
+                createForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir formulario de creación de curso: {ex.Message}");
             }
         }
 

@@ -84,6 +84,54 @@ namespace WebAPI.Controllers
             }
         }
 
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { message = "ID inválido" });
+                }
+                
+                _academicService.DeleteCourse(id);
+
+                return Ok(new { message = "Curso eliminado con éxito" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar curso");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        [HttpPost]
+
+        public IActionResult Post([FromBody] CourseDTO courseDTO)
+        {
+            try
+            {
+                if (courseDTO == null || string.IsNullOrWhiteSpace(courseDTO.Name))
+                {
+                    return BadRequest(new { message = "Datos inválidos" });
+                }
+                Course course = new Course
+                {
+                    Name = courseDTO.Name,
+                    AcademicPeriod = courseDTO.AcademicPeriod,
+                    CurricularPlan = courseDTO.CurriculumPlan,
+                    SpecialtiesLinked = courseDTO.SpecialtiesLinked
+                };
+                _academicService.CreateCourse(course);
+                return Ok(new { message = "Curso creado con éxito" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear curso");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
         //// POST api/<CourseController>
         //[HttpPost]
         //public IActionResult Post([FromBody] string value)
@@ -102,4 +150,5 @@ namespace WebAPI.Controllers
         //{
         //}
     }
+
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,10 +9,15 @@ namespace Models.Enums
 {
     public enum CurricularPlanType
     {
-        Basic = 0,
-        Advanced = 1,
-        Specialization = 2,
-        Master = 3,
-        Doctorate = 4
+        [Description("Basic")]
+        Basic,
+        [Description("Advanced")]
+        Advanced,
+        [Description("Specialization")]
+        Specialization,
+        [Description("Master")]
+        Master,
+        [Description("Doctorate")]
+        Doctorate,
     }
 }

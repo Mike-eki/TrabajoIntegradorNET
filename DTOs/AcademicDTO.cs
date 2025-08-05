@@ -13,7 +13,6 @@ namespace DTOs
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
-        public List<CourseDTO> Courses { get; set; } = new List<CourseDTO>();
     }
 
     // Para mostrar materias con plan curricular
@@ -22,7 +21,7 @@ namespace DTOs
         public int Id { get; set; }
         public string Name { get; set; } = null!;
 
-        public AcademicPeriodType AcademicPeriod;
+        public AcademicPeriodType AcademicPeriod { get; set; }
         public List<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
         public CurricularPlanType CurriculumPlan { get; set; }
 

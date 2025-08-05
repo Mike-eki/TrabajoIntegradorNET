@@ -15,6 +15,10 @@ namespace Repositories
             return InMemory.coursesSample.FirstOrDefault(c => c.Id == id)
             ?? throw new KeyNotFoundException("Curso no encontrado");
         }
+        public void CreateCourse(Course course)
+        {
+            AddCourse(course);
+        }
         public void DeleteCourse(int id)
         {
             var course = GetCourse(id);
@@ -42,6 +46,21 @@ namespace Repositories
             existingCourse.SpecialtiesLinked = course.SpecialtiesLinked;
             existingCourse.CurricularPlan = course.CurricularPlan;
             // No need to save changes in InMemory, as it's already updated in the list
+        }
+
+        public List<Specialty> GetSpecialties()
+        {
+            return InMemory.specialtiesSample;
+        }
+
+        public void AddSpecialty(Specialty specialty)
+        {
+            if (InMemory.specialtiesSample.Any(s => s.Name.Equals(specialty.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("La especialidad ya existe.");
+            }
+            specialty.Id = InMemory.specialtiesSample.Max(s => s.Id) + 1; // Assign a new ID
+            InMemory.specialtiesSample.Add(specialty);
         }
     }
 }

@@ -23,9 +23,31 @@ namespace Services
             return _academicRepository.GetCourses();
         }
 
+        public void CreateCourse(Course course)
+        {
+            _academicRepository.CreateCourse(course);
+        }
+
         public void UpdateCourse(Course existingcourse)
         {
             _academicRepository.UpdateCourse(existingcourse);
         }
+
+        public void DeleteCourse(int id)
+        {
+            _academicRepository.DeleteCourse(id);
+        }
+
+        public List<Specialty> GetSpecialties()
+        {
+            return _academicRepository.GetSpecialties();
+        }
+
+        public void CreateSpecialty(Specialty specialty)
+        {
+            _academicRepository.AddSpecialty(specialty);
+
+        }
+
     }
 }
