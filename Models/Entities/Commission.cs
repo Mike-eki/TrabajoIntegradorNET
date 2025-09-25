@@ -12,10 +12,6 @@ namespace Models.Entities
         public string Name { get; set; } = null!;
 
         [Required]
-        [MaxLength(50)]
-        public string Shift { get; set; } = null!;
-
-        [Required]
         [MaxLength(10)]
         public string Day { get; set; } = null!;
 
@@ -32,12 +28,12 @@ namespace Models.Entities
         public bool Enabled { get; set; }
 
         [Required]
-        [Range(1, 1000)]
-        public int StudentLimit { get; set; }
+        [Range(5, 100)]
+        public int MaxEnrolls { get; set; }
 
-        // Navegación
-        public virtual User? Professor { get; set; }
-        public virtual Course Course { get; set; } = null!;
-        public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        // Propiedades de navegación
+        public User Professor { get; set; } = null!; // Navegación a User (Profesor)
+        public Course Course { get; set; } = null!; // Navegación a Course
+        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>(); // Navegación a Enrollments
     }
 }

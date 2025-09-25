@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Models.Relations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Models.Entities
 {
@@ -8,7 +9,10 @@ namespace Models.Entities
         public int Id { get; set; }
 
         [Required]
-        public int EnrollmentId { get; set; }
+        public int UserId { get; set; }
+
+        [Required]
+        public int CourseId { get; set; }
 
         [Required]
         [Range(0, 10)]
@@ -18,6 +22,8 @@ namespace Models.Entities
         public DateTime Date { get; set; }
 
         // Navegación
-        public virtual Enrollment Enrollment { get; set; } = null!;
+        public virtual User User { get; set; } = null!;
+        public virtual Course Course { get; set; } = null!;
+
     }
 }

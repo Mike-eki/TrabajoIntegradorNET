@@ -16,15 +16,7 @@ namespace Models.Entities
         [Required]
         public AcademicPeriodType AcademicPeriod;
 
-        [Required]
-        public List<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
 
-        [Required]
-        public CurricularPlanType CurricularPlan;
-
-        // Navegación
-        //public virtual CurricularPlan CurricularPlan { get; set; } = null!;
-        //public virtual ICollection<SpecialtyCourse> SpecialtyCourses { get; set; } = new List<SpecialtyCourse>();
-        //public virtual ICollection<Commission> Commissions { get; set; } = new List<Commission>();
+        public ICollection<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
     }
 }

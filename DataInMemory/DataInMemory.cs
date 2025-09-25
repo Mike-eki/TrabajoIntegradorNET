@@ -51,41 +51,41 @@ namespace Data
 
             coursesSample = new List<Course>
             {
-                new Course { Id = 1, Name = "Programación I", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year, SpecialtiesLinked = new List<Specialty>() { specialtiesSample.Find(s => s.Id == 1)} },
-                new Course { Id = 2, Name = "Programación II", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 3, Name = "Bases de Datos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 4, Name = "Redes de Computadoras", CurricularPlan = CurricularPlanType.Basic  , AcademicPeriod = AcademicPeriodType.Quarter},
-                new Course { Id = 5, Name = "Matemáticas Discretas", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Semester},
-                new Course { Id = 6, Name = "Algoritmos y Estructuras de Datos", CurricularPlan = CurricularPlanType.Basic, AcademicPeriod = AcademicPeriodType.Semester},
-                new Course { Id = 7, Name = "Sistemas Operativos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Semester},
-                new Course { Id = 8, Name = "Ingeniería de Software", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Quarter},
-                new Course { Id = 9, Name = "Inteligencia Artificial", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Quarter},
-                new Course { Id = 10, Name = "Ciberseguridad", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Quarter},
-                new Course { Id = 11, Name = "Desarrollo Web", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 12, Name = "Desarrollo Móvil", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 13, Name = "Computación en la Nube", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 14, Name = "Big Data", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 15, Name = "Blockchain", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 16, Name = "Realidad Aumentada", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 17, Name = "Robótica", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 18, Name = "Sistemas Embebidos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 19, Name = "Ingeniería de Datos", CurricularPlan = CurricularPlanType.Basic , AcademicPeriod = AcademicPeriodType.Year},
-                new Course { Id = 20, Name = "Desarrollo de Videojuegos", CurricularPlan = CurricularPlanType.Basic  , AcademicPeriod = AcademicPeriodType.Year}
+                new Course { Id = 1, Name = "Programación I" , AcademicPeriod = AcademicPeriodType.Year, SpecialtiesLinked = new List<Specialty>() { specialtiesSample.Find(s => s.Id == 1)} },
+                new Course { Id = 2, Name = "Programación II" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 3, Name = "Bases de Datos" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 4, Name = "Redes de Computadoras"  , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 5, Name = "Matemáticas Discretas" , AcademicPeriod = AcademicPeriodType.Semester},
+                new Course { Id = 6, Name = "Algoritmos y Estructuras de Datos", AcademicPeriod = AcademicPeriodType.Semester},
+                new Course { Id = 7, Name = "Sistemas Operativos" , AcademicPeriod = AcademicPeriodType.Semester},
+                new Course { Id = 8, Name = "Ingeniería de Software" , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 9, Name = "Inteligencia Artificial" , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 10, Name = "Ciberseguridad" , AcademicPeriod = AcademicPeriodType.Quarter},
+                new Course { Id = 11, Name = "Desarrollo Web" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 12, Name = "Desarrollo Móvil" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 13, Name = "Computación en la Nube" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 14, Name = "Big Data" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 15, Name = "Blockchain" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 16, Name = "Realidad Aumentada" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 17, Name = "Robótica" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 18, Name = "Sistemas Embebidos" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 19, Name = "Ingeniería de Datos" , AcademicPeriod = AcademicPeriodType.Year},
+                new Course { Id = 20, Name = "Desarrollo de Videojuegos" , AcademicPeriod = AcademicPeriodType.Year}
             };
 
             // Sample commissions
 
             commissionsSample = new List<Commission>
             {
-                new Commission { Id = 1, Name = "Comisión A", Shift = "Morning", Day = "Monday", Schedule = "8:00-10:00", CourseId = 1, ProfessorId = 2, Enabled = true,StudentLimit = 30 },
-                new Commission { Id = 2, Name = "Comisión B", Shift = "Afternoon", Day = "Friday", Schedule = "14:00-16:00", CourseId = 2,  ProfessorId = 2, Enabled = true, StudentLimit = 25 },
-                new Commission { Id = 3, Name = "Comisión C", Shift = "Evening", Day = "Tuesday", Schedule = "18:00-20:00", CourseId = 3,  ProfessorId = 4, Enabled = true, StudentLimit = 20 },
-                new Commission { Id = 4, Name = "Comisión D", Shift = "Morning", Day = "Wednesday", Schedule = "10:00-12:00", CourseId = 4,  ProfessorId = 2, Enabled = true, StudentLimit = 15 },
-                new Commission { Id = 5, Name = "Comisión E", Shift = "Afternoon", Day = "Thursday", Schedule = "16:00-18:00", CourseId = 5,  ProfessorId = 4, Enabled = true, StudentLimit = 10 },
-                new Commission { Id = 6, Name = "Comisión F", Shift = "Evening", Day = "Friday", Schedule = "20:00-22:00", CourseId = 6,  ProfessorId = 2, Enabled = true, StudentLimit = 5 },
-                new Commission { Id = 7, Name = "Comisión G", Shift = "Morning", Day = "Monday", Schedule = "8:00-10:00", CourseId = 7,  ProfessorId = 4, Enabled = true, StudentLimit = 30 },
-                new Commission { Id = 8, Name = "Comisión H", Shift = "Afternoon", Day = "Tuesday", Schedule = "14:00-16:00", CourseId = 8,  ProfessorId = 2, Enabled = true, StudentLimit = 25 },
-                new Commission { Id = 9, Name = "Comisión I", Shift = "Evening", Day = "Wednesday", Schedule = "18:00-20:00", CourseId = 9,  ProfessorId = 4, Enabled = true, StudentLimit = 20 },
+                new Commission { Id = 1, Name = "Comisión A", Day = "Monday", Schedule = "8:00-10:00", CourseId = 1, ProfessorId = 2, Enabled = true,MaxEnrolls = 30 },
+                new Commission { Id = 2, Name = "Comisión B", Day = "Friday", Schedule = "14:00-16:00", CourseId = 2,  ProfessorId = 2, Enabled = true, MaxEnrolls = 25 },
+                new Commission { Id = 3, Name = "Comisión C", Day = "Tuesday", Schedule = "18:00-20:00", CourseId = 3,  ProfessorId = 4, Enabled = true, MaxEnrolls = 20 },
+                new Commission { Id = 4, Name = "Comisión D", Day = "Wednesday", Schedule = "10:00-12:00", CourseId = 4,  ProfessorId = 2, Enabled = true, MaxEnrolls = 15 },
+                new Commission { Id = 5, Name = "Comisión E", Day = "Thursday", Schedule = "16:00-18:00", CourseId = 5,  ProfessorId = 4, Enabled = true, MaxEnrolls = 10 },
+                new Commission { Id = 6, Name = "Comisión F", Day = "Friday", Schedule = "20:00-22:00", CourseId = 6,  ProfessorId = 2, Enabled = true, MaxEnrolls = 5 },
+                new Commission { Id = 7, Name = "Comisión G", Day = "Monday", Schedule = "8:00-10:00", CourseId = 7,  ProfessorId = 4, Enabled = true, MaxEnrolls = 30 },
+                new Commission { Id = 8, Name = "Comisión H", Day = "Tuesday", Schedule = "14:00-16:00", CourseId = 8,  ProfessorId = 2, Enabled = true, MaxEnrolls = 25 },
+                new Commission { Id = 9, Name = "Comisión I", Day = "Wednesday", Schedule = "18:00-20:00", CourseId = 9,  ProfessorId = 4, Enabled = true, MaxEnrolls = 20 },
             };
 
 

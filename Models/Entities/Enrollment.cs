@@ -19,11 +19,11 @@ namespace Models.Entities
 
         [Required]
         [MaxLength(50)]
-        public string Status { get; set; } = null!;
+        public string Status { get; set; } = "Activo";
 
-        // Navegación
-        public virtual User User { get; set; } = null!;
-        public virtual Commission Commission { get; set; } = null!;
-        public virtual Grade? Grade { get; set; }
+        // Propiedades de navegación
+        public User User { get; set; } = null!; // Navegación a User
+        public Commission Commission { get; set; } = null!; // Navegación a Commission
+        public ICollection<Grade> Grades { get; set; } = new List<Grade>(); // Navegación a Grades
     }
 }

@@ -23,7 +23,6 @@ namespace DTOs
 
         public AcademicPeriodType AcademicPeriod { get; set; }
         public List<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
-        public CurricularPlanType CurriculumPlan { get; set; }
 
     }
 

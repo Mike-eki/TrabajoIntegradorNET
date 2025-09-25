@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Models.Relations
 {
-    public class StudentSpecialty
+    public class UserSpecialty
     {
         [Key]
         public int Id { get; set; }
@@ -21,8 +21,8 @@ namespace Models.Relations
         [MaxLength(50)]
         public string Status { get; set; } = null!;
 
-        // Navegación
-        public virtual User User { get; set; } = null!;
-        public virtual Specialty Specialty { get; set; } = null!;
+        // Propiedades de navegación
+        public User User { get; set; } = null!; // Navegación a User
+        public Specialty Specialty { get; set; } = null!; // Navegación a Specialty
     }
 }

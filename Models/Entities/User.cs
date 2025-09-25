@@ -29,12 +29,9 @@ namespace Models.Entities
         [Required]
         public RoleType RoleName { get; set; }
 
-        public virtual ICollection<Specialty> Specialties { get; set; } = new List<Specialty>();
-        public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
-
-        // Navegación
-
-        //public virtual ICollection<StudentSpecialty> StudentSpecialties { get; set; } = new List<StudentSpecialty>();
-        //public virtual ICollection<ProfessorSpecialty> ProfessorSpecialties { get; set; } = new List<ProfessorSpecialty>();
+        // Propiedades de navegación
+        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public ICollection<UserSpecialty> UserSpecialties { get; set; } = new List<UserSpecialty>();
+        public ICollection<Commission> Commissions { get; set; } = new List<Commission>(); // Si es Profesor
     }
 }

@@ -1,10 +1,26 @@
-using Repositories.Interfaces;
 using Repositories;
-using Services.Interfaces;
+using Repositories.Interfaces;
+using Repositories.AdoNet;
+using Repositories.EF;
 using Services;
+using Services.Interfaces;
+using System;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar cadena de conexión
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Registrar repositorios según la entidad
+builder.Services.AddScoped<IUserRepository>(provider =>
+    new AdoNetUserRepository(connectionString));
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+builder.Services.AddScoped<ICommissionRepository, EFCommissionRepository>();
+builder.Services.AddScoped<ICourseRepository, EFCourseRepository>();
 
 // Add services to the container.
 builder.Services.AddScoped<IUserRepository, UserRepository>();
