@@ -15,19 +15,23 @@ namespace Models.Entities
 
         [Required]
         [MaxLength(100)]
-        public string Password { get; set; } = null!;
+        public string PasswordHash { get; set; } = null!;
+
+        public string Salt { get; set; } = string.Empty;
 
         [Required]
-        [EmailAddress]
-        [MaxLength(100)]
-        public string Email { get; set; } = null!;
+        public UserRole Role { get; set; } = UserRole.Student; // Enum con default Student
 
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; } = null!;
+        //[Required]
+        //[EmailAddress]
+        //[MaxLength(100)]
+        //public string Email { get; set; } = null!;
 
-        [Required]
-        public RoleType RoleName { get; set; }
+        //[Required]
+        //[MaxLength(100)]
+        //public string Name { get; set; } = null!;
+
+
 
         // Propiedades de navegación
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();

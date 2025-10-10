@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Models;
-using Repositories;
 using System;
 
 namespace Repositories.EF
@@ -9,7 +8,7 @@ namespace Repositories.EF
     {
         private readonly AppDbContext _context;
 
-        public EFCommissionRepository(AppDbContext context)
+        public EFAcademicRepository(AppDbContext context) 
         {
             _context = context;
         }

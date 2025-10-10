@@ -44,6 +44,7 @@ namespace Repositories.EF
                 entity.Property(e => e.Schedule).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Enabled).IsRequired();
                 entity.Property(e => e.MaxEnrolls).IsRequired();
+
                 entity.HasOne(e => e.Professor)
                       .WithMany()
                       .HasForeignKey(e => e.ProfessorId)
@@ -68,17 +69,24 @@ namespace Repositories.EF
                 .WithOne(us => us.User)
                 .HasForeignKey(us => us.UserId);
 
-            // Commission -> Enrollments (ya configurado arriba en Commission, pero aseguramos la relación inversa)
+            // Commission -> Enrollments
             modelBuilder.Entity<Enrollment>()
                 .HasOne(e => e.Commission)
                 .WithMany(c => c.Enrollments)
                 .HasForeignKey(e => e.CommissionId);
 
-            // Enrollment -> Grade
-            modelBuilder.Entity<Enrollment>()
-                .HasMany(e => e.Grades)
-                .WithOne(g => g.Enrollment)
-                .HasForeignKey(g => g.EnrollmentId);
+            //  Grade -> User y Course
+            modelBuilder.Entity<Grade>()
+                .HasOne(g => g.User)
+                .WithMany()
+                .HasForeignKey(g => g.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Grade>()
+                .HasOne(g => g.Course)
+                .WithMany()
+                .HasForeignKey(g => g.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // UserSpecialty -> User y Specialty
             modelBuilder.Entity<UserSpecialty>()
@@ -96,7 +104,6 @@ namespace Repositories.EF
                 .HasMany(s => s.Courses)
                 .WithMany(c => c.Specialties)
                 .UsingEntity("SpecialtyCourses");
-
 
             base.OnModelCreating(modelBuilder);
         }

@@ -22,7 +22,7 @@ namespace DTOs
         public string Name { get; set; } = null!;
 
         public AcademicPeriodType AcademicPeriod { get; set; }
-        public List<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
+        public List<Specialty> Specialties { get; set; } = new List<Specialty>();
 
     }
 

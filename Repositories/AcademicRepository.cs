@@ -43,8 +43,8 @@ namespace Repositories
             // Update properties
             existingCourse.Name = course.Name;
             existingCourse.AcademicPeriod = course.AcademicPeriod;
-            existingCourse.SpecialtiesLinked = course.SpecialtiesLinked;
-            existingCourse.CurricularPlan = course.CurricularPlan;
+            existingCourse.Specialties = course.Specialties;
+            //existingCourse.CurricularPlan = course.CurricularPlan;
             // No need to save changes in InMemory, as it's already updated in the list
         }
 

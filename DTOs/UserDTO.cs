@@ -16,7 +16,7 @@ namespace DTOs
         public string Password { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Name { get; set; } = null!;
-        public RoleType RoleName { get; set; }
+        public UserRole RoleName { get; set; }
     }
 
     public class ChangePasswordDTO
@@ -40,7 +40,7 @@ namespace DTOs
         public string Username { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Name { get; set; } = null!;
-        public RoleType RoleName { get; set; }
+        public UserRole RoleName { get; set; }
         public List<SpecialtyDTO> Specialties { get; set; } = new List<SpecialtyDTO>(); // Specialties of the user
     }
 }

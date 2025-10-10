@@ -19,7 +19,7 @@ namespace Services
             var user = _userRepository.GetUserByUsername(username);
             if (user == null) return null;
 
-            return password == user.Password ? user : null; // Return null if password does not match
+            return password == user.PasswordHash ? user : null; // Return null if password does not match
         }
     }
 }

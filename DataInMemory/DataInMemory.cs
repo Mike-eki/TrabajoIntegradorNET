@@ -18,10 +18,10 @@ namespace Data
 
             usersSample = new List<User>
             {
-                new User { Id = 1, Username = "alicebeltran", Password = "student123", RoleName = RoleType.Student , Email = "mail@example.com", Name = "Alice Beltran" },
-                new User { Id = 2, Username = "oscarwilde", Password = "proffesor123", RoleName = RoleType.Professor , Email = "test@example.com", Name = "Oscar Wilde" },
-                new User { Id = 3, Username = "adminuser", Password = "admin123", RoleName = RoleType.Administrator , Email = "admin@admin.com", Name = "Miqueas Moreno" },
-                new User { Id = 4, Username = "carlamatilde", Password = "proffesor123", RoleName = RoleType.Professor , Email = "t@t.com", Name = "Carla Matilde" },
+                new User { Id = 1, Username = "alicebeltran", PasswordHash = "student123", RoleName = RoleType.Student , Email = "mail@example.com", Name = "Alice Beltran" },
+                new User { Id = 2, Username = "oscarwilde", PasswordHash = "proffesor123", RoleName = RoleType.Professor , Email = "test@example.com", Name = "Oscar Wilde" },
+                new User { Id = 3, Username = "adminuser", PasswordHash = "admin123", RoleName = RoleType.Administrator , Email = "admin@admin.com", Name = "Miqueas Moreno" },
+                new User { Id = 4, Username = "carlamatilde", PasswordHash = "proffesor123", RoleName = RoleType.Professor , Email = "t@t.com", Name = "Carla Matilde" },
             };
 
             // Sample specialties
@@ -51,7 +51,9 @@ namespace Data
 
             coursesSample = new List<Course>
             {
-                new Course { Id = 1, Name = "Programación I" , AcademicPeriod = AcademicPeriodType.Year, SpecialtiesLinked = new List<Specialty>() { specialtiesSample.Find(s => s.Id == 1)} },
+                new Course { Id = 1, Name = "Programación I" , AcademicPeriod = AcademicPeriodType.Year, 
+                    //Specialties = new List<Specialty>() { specialtiesSample.Find(s => s.Id == 1)}
+                },
                 new Course { Id = 2, Name = "Programación II" , AcademicPeriod = AcademicPeriodType.Year},
                 new Course { Id = 3, Name = "Bases de Datos" , AcademicPeriod = AcademicPeriodType.Year},
                 new Course { Id = 4, Name = "Redes de Computadoras"  , AcademicPeriod = AcademicPeriodType.Quarter},

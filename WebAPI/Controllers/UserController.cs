@@ -1,169 +1,113 @@
-using DTOs;
-using Microsoft.AspNetCore.Authorization;
-//using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Models.Entities;
-using Services;
-using Services.Interfaces;
+using ADO.NET;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
 
-namespace WebAPI.Controllers
+namespace MyApp.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class UsersController : ControllerBase
     {
+        private readonly UserService _userService;
+        private readonly IUserRepository _repo;
         private readonly ILogger<UsersController> _logger;
 
-        private readonly IUserService _userService;
-        private readonly IAuthService _authService;
-
-        public UsersController(IAuthService authService, IUserService userService, ILogger<UsersController> logger)
+        public UsersController(UserService userService, IUserRepository repo, ILogger<UsersController> logger)
         {
-            _logger = logger;
-
             _userService = userService;
-            _authService = authService;
+            _repo = repo;
+            _logger = logger;
         }
 
-
-        [HttpGet]
-        public IActionResult Get()
+        [HttpPost("validate")]
+        public async Task<IActionResult> ValidateUser([FromBody] LoginRequest request)
         {
-            try
+            _logger.LogInformation("Validating user {Username}.", request.Username);
+            var (isValid, token) = await _userService.ValidateUserAsync(request.Username, request.Password);
+            if (!isValid)
             {
-                // 1. Obtener todos los usuarios del servicio
-                var users = _userService.GetAllUsers();
-
-                // 2. Mapear a DTOs para respuesta
-                var userDtos = users.Select(user => new UserDTO
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Email = user.Email,
-                    Name = user.Name,
-                    RoleName = user.RoleName
-                }).ToList();
-
-                // 3. Devolver respuesta exitosa
-                return Ok(new { users = userDtos, message = "Usuarios obtenidos exitosamente" });
+                _logger.LogWarning("Validation failed for user {Username}.", request.Username);
+                return Unauthorized(new { Message = "Invalid username or password" });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener usuarios");
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
+            _logger.LogInformation("User validation successful for {Username}.", request.Username);
+            return Ok(new { IsValid = true, Token = token });
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id) 
+        [HttpPost]
+        public async Task<IActionResult> CreateUser([FromBody] UserRequest request)
         {
-            // 1. Validar ID
-            if (id <= 0)
-                return BadRequest(new { message = "ID inválido" });
-            // 2. Obtener usuario por ID
-            var user = _userService.GetUserById(id);
+            _logger.LogInformation("Creating user {Username} with role {Role}.", request.Username, request.Role);
+            var role = UserRoleConverter.FromString(request.Role); // Convertir string a enum
+            var (hash, salt) = PasswordHasher.ComputeHash(request.Password);
+            var user = new User
+            {
+                Username = request.Username,
+                PasswordHash = hash,
+                Salt = salt,
+                Role = role
+            };
+            await _repo.CreateAsync(user);
+            _logger.LogInformation("User {Username} created with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
+            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role) });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUser(int id)
+        {
+            _logger.LogInformation("Retrieving user with ID {Id}.", id);
+            var user = await _repo.GetByIdAsync(id);
             if (user == null)
-                return NotFound(new { message = "Usuario no encontrado" });
-            // 3. Eliminar usuario
-            _userService.DeleteUser(id);
-            // 4. Preparar respuesta
-            var message = "Usuario eliminado";
-            return Ok(new {message});
+            {
+                _logger.LogWarning("User with ID {Id} not found.", id);
+                return NotFound();
+            }
+            _logger.LogInformation("User {Username} retrieved with ID {Id}.", user.Username, user.Id);
+            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role) });
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public IActionResult Update([FromBody] UserDTO userDTO)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserRequest request)
         {
-            // 1. Validar formato de datos (atributos [Required] en UpdateUserDTO)
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            // 2. Obtener usuario por ID
-            var user = _userService.GetUserById(userDTO.Id);
+            _logger.LogInformation("Updating user with ID {Id} to role {Role}.", id, request.Role);
+            var user = await _repo.GetByIdAsync(id);
             if (user == null)
-                return NotFound(new { message = "Usuario no encontrado" });
-
-            // 3. Actualizar datos del usuario
-            var updateDto = new UpdateUserDTO
             {
-                Email = user.Email,
-                Name = user.Name
-            };
-            user.Email = updateDto.Email ?? user.Email;
-            user.Name = updateDto.Name ?? user.Name;
-
-            _userService.UpdateUser(user);
-
-            // 4. Preparar respuesta
-            var message = "Usuario actualizado";
-            return Ok(new {message});
+                _logger.LogWarning("User with ID {Id} not found.", id);
+                return NotFound();
+            }
+            var role = UserRoleConverter.FromString(request.Role); // Convertir string a enum
+            var (hash, salt) = PasswordHasher.ComputeHash(request.Password);
+            user.Username = request.Username;
+            user.PasswordHash = hash;
+            user.Salt = salt;
+            user.Role = role;
+            await _repo.UpdateAsync(user);
+            _logger.LogInformation("User {Username} updated with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
+            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role) });
         }
 
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginDTO dto)
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
         {
-            // 1. Validar formato de datos (atributos [Required] en LoginDTO)
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            // 2. Autenticar usando el servicio
-            var user = _authService.Authenticate(dto.Username, dto.Password);
-
-            // 3. Manejar resultado
+            _logger.LogInformation("Deleting user with ID {Id}.", id);
+            var user = await _repo.GetByIdAsync(id);
             if (user == null)
-                return Unauthorized(new { message = "Credenciales inválidas" });
-
-            // 4. Preparar respuesta
-            UserDTO userDTO = new UserDTO
             {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Name = user.Name,
-                RoleName = user.RoleName,
-            };
-
-            // 5. Devolver respuesta exitosa
-            return Ok(new { user = userDTO, message = $"Login exitoso." });
-        }
-
-        [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterUserDTO dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            try
-            {
-                var user = _userService.RegisterUser(dto);
-
-                RegisterUserDTO okDto = new RegisterUserDTO
-                {
-                    Username = user.Username,
-                    Email = user.Email,
-                    Name = user.Name,
-                    RoleName = user.RoleName
-                };
-
-                return CreatedAtAction(nameof(Register), okDto, new {message = "Usuario registrado"});
-
+                _logger.LogWarning("User with ID {Id} not found.", id);
+                return NotFound();
             }
-            catch (InvalidOperationException ex)
-            {
-                // 5. Errores de negocio (ej: "Nombre de usuario ya existe")
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                // 6. Argumentos inválidos (ej: "Rol no válido")
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al registrar usuario");
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
-            
+            await _repo.DeleteAsync(id);
+            _logger.LogInformation("User with ID {Id} deleted.", id);
+            return NoContent();
         }
     }
+
+    public record LoginRequest(string Username, string Password);
+    public record UserRequest(string Username, string Password, string Role = "Student"); // Mantiene string para compatibilidad con JSON
 }

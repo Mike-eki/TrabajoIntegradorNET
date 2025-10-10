@@ -29,7 +29,7 @@ namespace Services
             var user = new User
             {
                 Username = dto.Username,
-                Password = dto.Password,
+                PasswordHash = dto.Password,
                 Email = dto.Email,
                 Name = dto.Name,
                 RoleName = dto.RoleName

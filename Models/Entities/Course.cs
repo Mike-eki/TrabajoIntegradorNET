@@ -17,6 +17,6 @@ namespace Models.Entities
         public AcademicPeriodType AcademicPeriod;
 
 
-        public ICollection<Specialty> SpecialtiesLinked { get; set; } = new List<Specialty>();
+        public ICollection<Specialty> Specialties { get; set; } = new List<Specialty>();
     }
 }
