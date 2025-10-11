@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using Models.Entities;
 using ADO.NET;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Models.Entities;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace MyApp.Controllers
 {
@@ -26,14 +27,28 @@ namespace MyApp.Controllers
         public async Task<IActionResult> ValidateUser([FromBody] LoginRequest request)
         {
             _logger.LogInformation("Validating user {Username}.", request.Username);
-            var (isValid, token) = await _userService.ValidateUserAsync(request.Username, request.Password);
+            var (isValid, accessToken, refreshToken) = await _userService.ValidateUserAsync(request.Username, request.Password);
             if (!isValid)
             {
                 _logger.LogWarning("Validation failed for user {Username}.", request.Username);
                 return Unauthorized(new { Message = "Invalid username or password" });
             }
             _logger.LogInformation("User validation successful for {Username}.", request.Username);
-            return Ok(new { IsValid = true, Token = token });
+            return Ok(new { IsValid = true, AccessToken = accessToken, RefreshToken = refreshToken });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            _logger.LogInformation("Refreshing token for user.");
+            var (isValid, newAccessToken, newRefreshToken) = await _userService.RefreshTokenAsync(request.RefreshToken);
+            if (!isValid)
+            {
+                _logger.LogWarning("Refresh token validation failed.");
+                return Unauthorized(new { Message = "Invalid or expired refresh token" });
+            }
+            _logger.LogInformation("Token refreshed successfully.");
+            return Ok(new { AccessToken = newAccessToken, RefreshToken = newRefreshToken });
         }
 
         [HttpPost]
@@ -106,8 +121,36 @@ namespace MyApp.Controllers
             _logger.LogInformation("User with ID {Id} deleted.", id);
             return NoContent();
         }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            _logger.LogInformation("Starting logout process.");
+            var claims = User.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
+            _logger.LogInformation("User Claims in Logout: {Claims}", string.Join(", ", claims));
+
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                _logger.LogWarning("Logout failed: Invalid user ID claim '{UserIdClaim}'.", userIdClaim ?? "null");
+                return BadRequest(new { Message = "Invalid token" });
+            }
+
+            var accessToken = Request.Headers.Authorization.ToString().Replace("Bearer ", "").Trim();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                _logger.LogWarning("Logout failed: No access token provided in Authorization header.");
+                return BadRequest(new { Message = "No access token provided" });
+            }
+
+            await _userService.LogoutAsync(userId, accessToken);
+            _logger.LogInformation("User ID {UserId} logged out successfully.", userId);
+            return Ok(new { Message = "Logout successful" });
+        }
     }
 
     public record LoginRequest(string Username, string Password);
     public record UserRequest(string Username, string Password, string Role = "Student"); // Mantiene string para compatibilidad con JSON
+    public record RefreshTokenRequest(string RefreshToken);
 }

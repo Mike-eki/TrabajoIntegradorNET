@@ -27,6 +27,8 @@ namespace ADO.NET
             _logger.LogInformation("Starting database initialization for {DatabaseName}.", _databaseName);
             await CreateDatabaseIfNotExistsAsync(ct);
             await CreateUsersTableIfNotExistsAsync(ct);
+            await CreateRefreshTokensTableIfNotExistsAsync(ct);
+            await CreateRevokedAccessTokensTableIfNotExistsAsync(ct);
             await CreateValidateUserProcIfNotExistsAsync(ct);
             _logger.LogInformation("Database initialization completed for {DatabaseName}.", _databaseName);
         }
@@ -66,6 +68,43 @@ namespace ADO.NET
                     END
                 END";
             _logger.LogDebug("Executing SQL to create or update Users table.");
+            await ExecuteAsync(_factory.CreateApp(), sql, ct);
+        }
+
+        private async Task CreateRefreshTokensTableIfNotExistsAsync(CancellationToken ct)
+        {
+            const string sql = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id
+                               WHERE t.name = 'RefreshTokens' AND s.name = 'dbo')
+                BEGIN
+                    CREATE TABLE dbo.RefreshTokens
+                    (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        UserId INT NOT NULL CONSTRAINT FK_RefreshTokens_Users FOREIGN KEY REFERENCES dbo.Users(Id),
+                        Token NVARCHAR(256) NOT NULL,
+                        ExpiresAt DATETIME2 NOT NULL,
+                        IsRevoked BIT NOT NULL DEFAULT 0,
+                        CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        CONSTRAINT UQ_RefreshTokens_Token UNIQUE (Token)
+                    );
+                END";
+            _logger.LogDebug("Executing SQL to create RefreshTokens table.");
+            await ExecuteAsync(_factory.CreateApp(), sql, ct);
+        }
+
+        private async Task CreateRevokedAccessTokensTableIfNotExistsAsync(CancellationToken ct)
+        {
+            const string sql = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id
+                               WHERE t.name = 'RevokedAccessTokens' AND s.name = 'dbo')
+                BEGIN
+                    CREATE TABLE dbo.RevokedAccessTokens
+                    (
+                        Token NVARCHAR(1024) PRIMARY KEY,
+                        RevokedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END";
+            _logger.LogInformation("Executing SQL to create RevokedAccessTokens table.");
             await ExecuteAsync(_factory.CreateApp(), sql, ct);
         }
 
