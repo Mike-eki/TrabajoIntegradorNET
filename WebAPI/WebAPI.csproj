@@ -14,10 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DTOs\DTOs.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />
     <ProjectReference Include="..\Repositories.AdoNet\ADO.NET.csproj" />
-    <ProjectReference Include="..\Repositories.EF\Repositories.EF.csproj" />
   </ItemGroup>
 
 </Project>

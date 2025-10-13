@@ -29,31 +29,42 @@ namespace ADO.NET
 
         public async Task CreateAsync(User user, CancellationToken ct = default)
         {
-            const string sql = @"INSERT INTO dbo.Users (Username, PasswordHash, Salt, Role) 
-                                OUTPUT INSERTED.Id 
-                                VALUES (@Username, @PasswordHash, @Salt, @Role);";
+            // ✨ SQL ACTUALIZADO ✨
+            const string sql = @"INSERT INTO dbo.Users (Username, Legajo, Email, Fullname, PasswordHash, Salt, Role) 
+                        OUTPUT INSERTED.Id 
+                        VALUES (@Username, @Legajo, @Email, @Fullname, @PasswordHash, @Salt, @Role);";
             await using var conn = _factory.CreateApp();
             await using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@Username", user.Username);
+            // ✨ AÑADIR NUEVOS PARÁMETROS ✨
+            cmd.Parameters.AddWithValue("@Legajo", user.Legajo);
+            cmd.Parameters.AddWithValue("@Email", user.Email);
+            cmd.Parameters.AddWithValue("@Fullname", user.Fullname);
             cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
             cmd.Parameters.AddWithValue("@Salt", user.Salt);
-            cmd.Parameters.AddWithValue("@Role", UserRoleConverter.ToString(user.Role)); // Convertir enum a string
+            cmd.Parameters.AddWithValue("@Role", UserRoleConverter.ToString(user.Role));
             await conn.OpenAsync(ct);
             user.Id = (int)await cmd.ExecuteScalarAsync(ct);
         }
 
         public async Task UpdateAsync(User user, CancellationToken ct = default)
         {
+            // ✨ SQL ACTUALIZADO ✨
             const string sql = @"UPDATE dbo.Users 
-                                SET Username = @Username, PasswordHash = @PasswordHash, Salt = @Salt, Role = @Role 
-                                WHERE Id = @Id;";
+                        SET Username = @Username, Legajo = @Legajo, Email = @Email, Fullname = @Fullname, 
+                            PasswordHash = @PasswordHash, Salt = @Salt, Role = @Role 
+                        WHERE Id = @Id;";
             await using var conn = _factory.CreateApp();
             await using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@Id", user.Id);
             cmd.Parameters.AddWithValue("@Username", user.Username);
+            // ✨ AÑADIR NUEVOS PARÁMETROS ✨
+            cmd.Parameters.AddWithValue("@Legajo", user.Legajo);
+            cmd.Parameters.AddWithValue("@Email", user.Email);
+            cmd.Parameters.AddWithValue("@Fullname", user.Fullname);
             cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
             cmd.Parameters.AddWithValue("@Salt", user.Salt);
-            cmd.Parameters.AddWithValue("@Role", UserRoleConverter.ToString(user.Role)); // Convertir enum a string
+            cmd.Parameters.AddWithValue("@Role", UserRoleConverter.ToString(user.Role));
             await conn.OpenAsync(ct);
             await cmd.ExecuteNonQueryAsync(ct);
         }
@@ -70,43 +81,55 @@ namespace ADO.NET
 
         public async Task<User?> GetByIdAsync(int userId, CancellationToken ct = default)
         {
-            const string sql = @"SELECT Id, Username, PasswordHash, Salt, Role 
-                                FROM dbo.Users 
-                                WHERE Id = @Id;";
+            // ✨ SQL ACTUALIZADO ✨
+            const string sql = @"SELECT Id, Username, Legajo, Email, Fullname, PasswordHash, Salt, Role 
+                        FROM dbo.Users 
+                        WHERE Id = @Id;";
             await using var conn = _factory.CreateApp();
             await using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@Id", userId);
             await conn.OpenAsync(ct);
             await using var rdr = await cmd.ExecuteReaderAsync(ct);
             if (!await rdr.ReadAsync(ct)) return null;
+
+            // ✨ MAPEO ACTUALIZADO ✨
             return new User
             {
                 Id = rdr.GetInt32(0),
                 Username = rdr.GetString(1),
-                PasswordHash = rdr.GetString(2),
-                Salt = rdr.GetString(3),
-                Role = UserRoleConverter.FromString(rdr.GetString(4)) // Convertir string a enum
+                Legajo = rdr.GetString(2),     // Nuevo
+                Email = rdr.GetString(3),      // Nuevo
+                Fullname = rdr.GetString(4),   // Nuevo
+                PasswordHash = rdr.GetString(5),
+                Salt = rdr.GetString(6),
+                Role = UserRoleConverter.FromString(rdr.GetString(7))
             };
         }
 
         public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
         {
-            const string sql = @"SELECT Id, Username, PasswordHash, Salt, Role 
-                                FROM dbo.Users 
-                                WHERE Username = @Username;";
+            // ✨ SQL ACTUALIZADO ✨
+            const string sql = @"SELECT Id, Username, Legajo, Email, Fullname, PasswordHash, Salt, Role 
+                        FROM dbo.Users 
+                        WHERE Username = @Username;";
             await using var conn = _factory.CreateApp();
             await using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@Username", username);
             await conn.OpenAsync(ct);
             await using var rdr = await cmd.ExecuteReaderAsync(ct);
             if (!await rdr.ReadAsync(ct)) return null;
+
+            // ✨ MAPEO ACTUALIZADO ✨
             return new User
             {
                 Id = rdr.GetInt32(0),
                 Username = rdr.GetString(1),
-                PasswordHash = rdr.GetString(2),
-                Salt = rdr.GetString(3),
-                Role = UserRoleConverter.FromString(rdr.GetString(4)) // Convertir string a enum
+                Legajo = rdr.GetString(2),     // Nuevo
+                Email = rdr.GetString(3),      // Nuevo
+                Fullname = rdr.GetString(4),   // Nuevo
+                PasswordHash = rdr.GetString(5),
+                Salt = rdr.GetString(6),
+                Role = UserRoleConverter.FromString(rdr.GetString(7))
             };
         }
     }

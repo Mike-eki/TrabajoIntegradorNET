@@ -27,6 +27,7 @@ namespace ADO.NET
             _logger.LogInformation("Starting database initialization for {DatabaseName}.", _databaseName);
             await CreateDatabaseIfNotExistsAsync(ct);
             await CreateUsersTableIfNotExistsAsync(ct);
+            await UpdateUsersTableSchemaAsync(ct);
             await CreateRefreshTokensTableIfNotExistsAsync(ct);
             await CreateRevokedAccessTokensTableIfNotExistsAsync(ct);
             await CreateValidateUserProcIfNotExistsAsync(ct);
@@ -42,58 +43,45 @@ namespace ADO.NET
 
         private async Task CreateUsersTableIfNotExistsAsync(CancellationToken ct)
         {
-            // ✨ ACTUALIZADO CON NUEVAS COLUMNAS Y CONSTRAINTS ✨
             const string sql = @"
-        IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id
-                       WHERE t.name = 'Users' AND s.name = 'dbo')
-        BEGIN
-            CREATE TABLE dbo.Users
-            (
-                Id INT IDENTITY(1,1) PRIMARY KEY,
-                Username NVARCHAR(50) NOT NULL CONSTRAINT UQ_Users_Username UNIQUE,
-                Legajo NVARCHAR(50) NOT NULL CONSTRAINT UQ_Users_Legajo UNIQUE,
-                Email NVARCHAR(100) NOT NULL CONSTRAINT UQ_Users_Email UNIQUE,
-                Fullname NVARCHAR(100) NOT NULL,
-                PasswordHash NVARCHAR(256) NOT NULL,
-                Salt NVARCHAR(44) NOT NULL,
-                Role NVARCHAR(20) NOT NULL DEFAULT 'Student' 
-                    CONSTRAINT CHK_Users_Role CHECK (Role IN ('Admin', 'Student', 'Professor'))
-            );
-        END
-        ELSE
-        BEGIN
-            -- ✨ SECCIÓN ELSE ACTUALIZADA PARA AÑADIR COLUMNAS SI FALTAN ✨
-            -- Añadir Role (ya lo tenías, se mantiene)
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.Users') AND name = 'Role')
-            BEGIN
-                ALTER TABLE dbo.Users
-                ADD Role NVARCHAR(20) NOT NULL DEFAULT 'Student' 
-                    CONSTRAINT CHK_Users_Role CHECK (Role IN ('Admin', 'Student', 'Professor'));
-            END
-            -- Añadir Legajo
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.Users') AND name = 'Legajo')
-            BEGIN
-                ALTER TABLE dbo.Users
-                ADD Legajo NVARCHAR(50) NOT NULL DEFAULT 'N/A';
-                ALTER TABLE dbo.Users ADD CONSTRAINT UQ_Users_Legajo UNIQUE (Legajo);
-            END
-            -- Añadir Email
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.Users') AND name = 'Email')
-            BEGIN
-                ALTER TABLE dbo.Users
-                ADD Email NVARCHAR(100) NOT NULL DEFAULT 'no-email@domain.com';
-                ALTER TABLE dbo.Users ADD CONSTRAINT UQ_Users_Email UNIQUE (Email);
-            END
-            -- Añadir Fullname
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.Users') AND name = 'Fullname')
-            BEGIN
-                ALTER TABLE dbo.Users
-                ADD Fullname NVARCHAR(100) NOT NULL DEFAULT 'No Name';
-            END
-        END";
-            _logger.LogDebug("Executing SQL to create or update Users table.");
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id
+                               WHERE t.name = 'Users' AND s.name = 'dbo')
+                BEGIN
+                    CREATE TABLE dbo.Users
+                    (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        AcademicId NVARCHAR(50) NOT NULL UNIQUE,
+                        Username NVARCHAR(255) NOT NULL UNIQUE,
+                        PasswordHash NVARCHAR(255) NOT NULL,
+                        Salt NVARCHAR(255) NULL,
+                        FullName NVARCHAR(255) NOT NULL,
+                        Email NVARCHAR(255) NOT NULL UNIQUE,
+                        Role NVARCHAR(20) NOT NULL CHECK(Role IN ('Student', 'Professor', 'Admin'))
+                    );
+                END";
+            _logger.LogDebug("Executing SQL to create Users table.");
             await ExecuteAsync(_factory.CreateApp(), sql, ct);
+        }
 
+        private async Task UpdateUsersTableSchemaAsync(CancellationToken ct)
+        {
+            const string sql = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Users') AND name = 'AcademicId')
+                BEGIN
+                    ALTER TABLE dbo.Users ADD AcademicId NVARCHAR(50) NOT NULL DEFAULT '';
+                    ALTER TABLE dbo.Users ADD CONSTRAINT UQ_Users_AcademicId UNIQUE (AcademicId);
+                END
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Users') AND name = 'FullName')
+                BEGIN
+                    ALTER TABLE dbo.Users ADD FullName NVARCHAR(255) NOT NULL DEFAULT '';
+                END
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Users') AND name = 'Email')
+                BEGIN
+                    ALTER TABLE dbo.Users ADD Email NVARCHAR(255) NOT NULL DEFAULT '';
+                    ALTER TABLE dbo.Users ADD CONSTRAINT UQ_Users_Email UNIQUE (Email);
+                END";
+            _logger.LogDebug("Executing SQL to update Users table schema.");
+            await ExecuteAsync(_factory.CreateApp(), sql, ct);
         }
 
         private async Task CreateRefreshTokensTableIfNotExistsAsync(CancellationToken ct)

@@ -1,4 +1,4 @@
-using ADO.NET;
+﻿using ADO.NET;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -55,18 +55,25 @@ namespace MyApp.Controllers
         public async Task<IActionResult> CreateUser([FromBody] UserRequest request)
         {
             _logger.LogInformation("Creating user {Username} with role {Role}.", request.Username, request.Role);
-            var role = UserRoleConverter.FromString(request.Role); // Convertir string a enum
+            var role = UserRoleConverter.FromString(request.Role);
             var (hash, salt) = PasswordHasher.ComputeHash(request.Password);
+
+            // ✨ CREACIÓN DEL OBJETO USER ACTUALIZADA ✨
             var user = new User
             {
                 Username = request.Username,
+                Legajo = request.Legajo,
+                Email = request.Email,
+                Fullname = request.Fullname,
                 PasswordHash = hash,
                 Salt = salt,
                 Role = role
             };
             await _repo.CreateAsync(user);
+
+            // ✨ RESPUESTA ACTUALIZADA PARA DEVOLVER MÁS DATOS ✨
             _logger.LogInformation("User {Username} created with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
-            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role) });
+            return Ok(new { user.Id, user.Username, user.Legajo, user.Email, user.Fullname, Role = UserRoleConverter.ToString(user.Role) });
         }
 
         [Authorize(Roles = "Admin")]
@@ -81,7 +88,7 @@ namespace MyApp.Controllers
                 return NotFound();
             }
             _logger.LogInformation("User {Username} retrieved with ID {Id}.", user.Username, user.Id);
-            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role) });
+            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role), user.Email, user.Fullname, user.Legajo });
         }
 
         [Authorize(Roles = "Admin")]
@@ -101,9 +108,12 @@ namespace MyApp.Controllers
             user.PasswordHash = hash;
             user.Salt = salt;
             user.Role = role;
+            user.Email = request.Email;
+            user.Legajo = request.Legajo;
+            user.Fullname = request.Fullname;
             await _repo.UpdateAsync(user);
             _logger.LogInformation("User {Username} updated with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
-            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role) });
+            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role), user.Email, user.Fullname, user.Legajo });
         }
 
         [Authorize(Roles = "Admin")]
@@ -151,6 +161,14 @@ namespace MyApp.Controllers
     }
 
     public record LoginRequest(string Username, string Password);
-    public record UserRequest(string Username, string Password, string Role = "Student"); // Mantiene string para compatibilidad con JSON
+    // ✨ DTO ACTUALIZADO ✨
+    public record UserRequest(
+        string Username,
+        string Password,
+        string Legajo,
+        string Email,
+        string Fullname,
+        string Role = "Student"
+    );
     public record RefreshTokenRequest(string RefreshToken);
 }
