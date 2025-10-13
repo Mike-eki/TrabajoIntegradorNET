@@ -1,12 +1,18 @@
-using ADO.NET;
+﻿using ADO.NET;
+using EntityFramework;
+using EntityFramework.ADO.NET;
+using EntityFramework.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging; // Necesario para ILogger
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.Tasks;
@@ -51,7 +57,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddLogging(logging =>
 {
     logging.AddConsole();
-    logging.SetMinimumLevel(LogLevel.Information); // Cambia a LogLevel.Debug para m�s detalles
+    logging.SetMinimumLevel(LogLevel.Information); // Cambia a LogLevel.Debug para más detalles
 });
 
 // Configure CORS
@@ -82,7 +88,7 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not found in configuration."))),
-        ClockSkew = TimeSpan.FromSeconds(30) // Tolerancia de 30 segundos para desincronizaci�n
+        ClockSkew = TimeSpan.FromSeconds(30) // Tolerancia de 30 segundos para desincronización
     };
     options.Events = new JwtBearerEvents
     {
@@ -149,6 +155,20 @@ builder.Services.AddSingleton<DatabaseInitializer>(sp =>
         new SqlConnectionStringBuilder(connectionString).InitialCatalog,
         sp.GetRequiredService<ILogger<DatabaseInitializer>>()
     ));
+
+// Entity Framework services
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(connectionString,
+        b => b.MigrationsAssembly("EntityFramework"))); // 👈 EFCore ahora tiene las migraciones
+
+// ✨ NUEVO: REGISTRAR REPOSITORIO DE CAREERS ✨
+// Usamos AddScoped para DbContext, es el ciclo de vida recomendado.
+builder.Services.AddScoped<ICareerRepository, CareerRepository>();
+builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
+builder.Services.AddScoped<ICommissionRepository, CommissionRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+
+
 
 var app = builder.Build();
 

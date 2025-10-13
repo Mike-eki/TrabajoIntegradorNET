@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAPI", "WebAPI\WebAPI.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADO.NET", "Repositories.AdoNet\ADO.NET.csproj", "{6A61EC7A-A624-4C0F-83DF-8B798C845130}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework", "EntityFramework\EntityFramework.csproj", "{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{6A61EC7A-A624-4C0F-83DF-8B798C845130}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A61EC7A-A624-4C0F-83DF-8B798C845130}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6A61EC7A-A624-4C0F-83DF-8B798C845130}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
