@@ -21,7 +21,28 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetAll()
         {
             var commissions = await _repo.GetAllAsync();
-            return Ok(commissions);
+
+            var response = commissions.Select(c => new CommissionResponseDto
+            {
+                Id = c.Id,
+                SubjectId = c.SubjectId,
+                SubjectName = c.Subject.Name,
+                ProfessorId = c.ProfessorId,
+                CycleYear = c.CycleYear,
+                DayOfWeek = c.DayOfWeek,
+                StartTime = c.StartTime,
+                EndTime = c.EndTime,
+                Capacity = c.Capacity,
+                Status = c.Status,
+                Enrollments = c.Enrollments.Select(e => new EnrollmentSimpleDto
+                {
+                    Id = e.Id,
+                    StudentId = e.StudentId,
+                    Status = e.Status
+                })
+            });
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
@@ -30,26 +51,79 @@ namespace WebAPI.Controllers
             var commission = await _repo.GetByIdAsync(id);
             if (commission == null)
                 return NotFound();
-            return Ok(commission);
+
+            var response = new CommissionResponseDto
+            {
+                Id = commission.Id,
+                SubjectId = commission.SubjectId,
+                SubjectName = commission.Subject.Name,
+                ProfessorId = commission.ProfessorId,
+                CycleYear = commission.CycleYear,
+                DayOfWeek = commission.DayOfWeek,
+                StartTime = commission.StartTime,
+                EndTime = commission.EndTime,
+                Capacity = commission.Capacity,
+                Status = commission.Status,
+                Enrollments = commission.Enrollments.Select(e => new EnrollmentSimpleDto
+                {
+                    Id = e.Id,
+                    StudentId = e.StudentId,
+                    Status = e.Status
+                })
+            };
+
+            return Ok(response);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Commission commission)
+        public async Task<IActionResult> Create([FromBody] CommissionCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            await _repo.AddAsync(commission);
-            return CreatedAtAction(nameof(GetById), new { id = commission.Id }, commission);
+            var commission = new Commission
+            {
+                SubjectId = dto.SubjectId,
+                ProfessorId = dto.ProfessorId,
+                CycleYear = dto.CycleYear,
+                DayOfWeek = dto.DayOfWeek,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
+                Capacity = dto.Capacity,
+                Status = dto.Status
+            };
+
+            try
+            {
+                await _repo.AddAsync(commission);
+                return CreatedAtAction(nameof(GetById), new { id = commission.Id }, commission);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Commission commission)
+        public async Task<IActionResult> Update(int id, [FromBody] CommissionCreateDto dto)
         {
-            if (id != commission.Id)
-                return BadRequest();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            await _repo.UpdateAsync(commission);
+            var existing = await _repo.GetByIdAsync(id);
+            if (existing == null)
+                return NotFound();
+
+            existing.SubjectId = dto.SubjectId;
+            existing.ProfessorId = dto.ProfessorId;
+            existing.CycleYear = dto.CycleYear;
+            existing.DayOfWeek = dto.DayOfWeek;
+            existing.StartTime = dto.StartTime;
+            existing.EndTime = dto.EndTime;
+            existing.Capacity = dto.Capacity;
+            existing.Status = dto.Status;
+
+            await _repo.UpdateAsync(existing);
             return NoContent();
         }
 
@@ -58,6 +132,43 @@ namespace WebAPI.Controllers
         {
             await _repo.DeleteAsync(id);
             return NoContent();
+        }
+
+        // DTO para crear una comisión
+        public class CommissionCreateDto
+        {
+            public int SubjectId { get; set; }
+            public int? ProfessorId { get; set; }
+            public int CycleYear { get; set; }
+            public string DayOfWeek { get; set; } = null!;
+            public TimeSpan StartTime { get; set; }
+            public TimeSpan EndTime { get; set; }
+            public int Capacity { get; set; }
+            public string Status { get; set; } = "INACTIVE";
+        }
+
+        // DTO para devolver una comisión (sin recursión)
+        public class CommissionResponseDto
+        {
+            public int Id { get; set; }
+            public int SubjectId { get; set; }
+            public string SubjectName { get; set; } = null!;
+            public int? ProfessorId { get; set; }
+            public int CycleYear { get; set; }
+            public string DayOfWeek { get; set; } = null!;
+            public TimeSpan StartTime { get; set; }
+            public TimeSpan EndTime { get; set; }
+            public int Capacity { get; set; }
+            public string Status { get; set; } = null!;
+            public IEnumerable<EnrollmentSimpleDto> Enrollments { get; set; } = new List<EnrollmentSimpleDto>();
+        }
+
+        // DTO simplificado de inscripción (para incluir dentro de Commission)
+        public class EnrollmentSimpleDto
+        {
+            public int Id { get; set; }
+            public int StudentId { get; set; }
+            public string Status { get; set; } = null!;
         }
     }
 }

@@ -18,6 +18,8 @@ namespace Models.Entities
 
         public DateTime EnrollmentDate { get; set; } = DateTime.UtcNow;
 
+        public DateTime? UnenrollmentDate { get; set; } // ✨ Nueva propiedad
+
         public int? FinalGrade { get; set; }
 
         [Required]

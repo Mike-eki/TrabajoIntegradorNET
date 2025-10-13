@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models.Entities;
 using System.Threading.Tasks;
+using static MyApp.Controllers.CareersController.CareerResponseDto;
 
 namespace MyApp.Controllers
 {
@@ -22,7 +23,19 @@ namespace MyApp.Controllers
         public async Task<IActionResult> GetCareers()
         {
             var careers = await _repo.GetAllAsync();
-            return Ok(careers);
+
+            var response = careers.Select(c => new CareerResponseDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Subjects = c.Subjects.Select(s => new SubjectSimpleDto
+                {
+                    Id = s.Id,
+                    Name = s.Name
+                })
+            });
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
@@ -30,31 +43,53 @@ namespace MyApp.Controllers
         {
             var career = await _repo.GetByIdAsync(id);
             if (career == null)
-            {
                 return NotFound();
-            }
-            return Ok(career);
+
+            var response = new CareerResponseDto
+            {
+                Id = career.Id,
+                Name = career.Name,
+                Subjects = career.Subjects.Select(s => new SubjectSimpleDto
+                {
+                    Id = s.Id,
+                    Name = s.Name
+                })
+            };
+
+            return Ok(response);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCareer([FromBody] Career career)
+        public async Task<IActionResult> CreateCareer([FromBody] CareerCreateDto dto)
         {
-            if (career == null || !ModelState.IsValid)
-            {
-                return BadRequest();
-            }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var career = new Career { Name = dto.Name };
             await _repo.AddAsync(career);
-            return CreatedAtAction(nameof(GetCareer), new { id = career.Id }, career);
+
+            var response = new CareerResponseDto
+            {
+                Id = career.Id,
+                Name = career.Name,
+                Subjects = new List<SubjectSimpleDto>()
+            };
+
+            return CreatedAtAction(nameof(GetCareer), new { id = career.Id }, response);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCareer(int id, [FromBody] Career career)
+        public async Task<IActionResult> UpdateCareer(int id, [FromBody] CareerCreateDto dto)
         {
-            if (id != career.Id || !ModelState.IsValid)
-            {
-                return BadRequest();
-            }
-            await _repo.UpdateAsync(career);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existing = await _repo.GetByIdAsync(id);
+            if (existing == null)
+                return NotFound();
+
+            existing.Name = dto.Name;
+            await _repo.UpdateAsync(existing);
             return NoContent();
         }
 
@@ -68,6 +103,23 @@ namespace MyApp.Controllers
             }
             await _repo.DeleteAsync(id);
             return NoContent();
+        }
+
+        public class CareerCreateDto
+        {
+            public string Name { get; set; } = null!;
+        }
+
+        public class CareerResponseDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = null!;
+            public IEnumerable<SubjectSimpleDto> Subjects { get; set; } = new List<SubjectSimpleDto>();
+            public class SubjectSimpleDto
+            {
+                public int Id { get; set; }
+                public string Name { get; set; } = null!;
+            }
         }
     }
 }

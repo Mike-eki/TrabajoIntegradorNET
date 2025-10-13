@@ -18,49 +18,88 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetAll()
         {
             var subjects = await _repo.GetAllAsync();
-            var resp = subjects.Select(s => new SubjectResponse(
-                s.Id, s.Name, s.Careers.Select(c => new CareerDto(c.Id, c.Name))
-            ));
-            return Ok(resp);
+
+            var response = subjects.Select(s => new SubjectResponseDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Careers = s.Careers.Select(c => new CareerSimpleDto
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                })
+            });
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var s = await _repo.GetByIdAsync(id);
-            if (s == null) return NotFound();
-            var resp = new SubjectResponse(s.Id, s.Name, s.Careers.Select(c => new CareerDto(c.Id, c.Name)));
-            return Ok(resp);
+            var subject = await _repo.GetByIdAsync(id);
+            if (subject == null)
+                return NotFound();
+
+            var response = new SubjectResponseDto
+            {
+                Id = subject.Id,
+                Name = subject.Name,
+                Careers = subject.Careers.Select(c => new CareerSimpleDto
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                })
+            };
+
+            return Ok(response);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] SubjectCreateRequest req)
+        public async Task<IActionResult> Create([FromBody] SubjectCreateDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            var subject = new Subject { Name = req.Name };
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var created = await _repo.AddAsync(subject, req.CareerIds);
-                return CreatedAtAction(nameof(Get), new { id = created.Id }, new SubjectResponse(created.Id, created.Name, created.Careers.Select(c => new CareerDto(c.Id, c.Name))));
+                var subject = new Subject { Name = dto.Name };
+                var created = await _repo.AddAsync(subject, dto.CareerIds);
+
+                var response = new SubjectResponseDto
+                {
+                    Id = created.Id,
+                    Name = created.Name,
+                    Careers = created.Careers.Select(c => new CareerSimpleDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name
+                    })
+                };
+
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, response);
             }
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] SubjectCreateRequest req)
+        public async Task<IActionResult> Update(int id, [FromBody] SubjectCreateDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            var subject = new Subject { Id = id, Name = req.Name };
             try
             {
-                await _repo.UpdateAsync(subject, req.CareerIds);
+                var subject = new Subject { Id = id, Name = dto.Name };
+                await _repo.UpdateAsync(subject, dto.CareerIds);
                 return NoContent();
             }
-            catch (KeyNotFoundException) { return NotFound(); }
-            catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -76,13 +115,26 @@ namespace WebAPI.Controllers
             int[] CareerIds // <-- lista de IDs de carreras a las que pertenece
         );
 
-        // Response
-        public record SubjectResponse(
-            int Id,
-            string Name,
-            IEnumerable<CareerDto> Careers
-        );
+        // DTO para crear una materia (recibe IDs de carreras)
+        public class SubjectCreateDto
+        {
+            public string Name { get; set; } = null!;
+            public int[] CareerIds { get; set; } = [];
+        }
 
-        public record CareerDto(int Id, string Name);
+        // DTO para devolver una materia con carreras asociadas
+        public class SubjectResponseDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = null!;
+            public IEnumerable<CareerSimpleDto> Careers { get; set; } = new List<CareerSimpleDto>();
+        }
+
+        // DTO simplificado de carrera (para usar dentro de Subject)
+        public class CareerSimpleDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = null!;
+        }
     }
 }
