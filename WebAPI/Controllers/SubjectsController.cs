@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models.Entities;
+using Models.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -107,34 +108,6 @@ namespace WebAPI.Controllers
         {
             await _repo.DeleteAsync(id);
             return NoContent();
-        }
-
-        // Request para crear/editar Subject
-        public record SubjectCreateRequest(
-            string Name,
-            int[] CareerIds // <-- lista de IDs de carreras a las que pertenece
-        );
-
-        // DTO para crear una materia (recibe IDs de carreras)
-        public class SubjectCreateDto
-        {
-            public string Name { get; set; } = null!;
-            public int[] CareerIds { get; set; } = [];
-        }
-
-        // DTO para devolver una materia con carreras asociadas
-        public class SubjectResponseDto
-        {
-            public int Id { get; set; }
-            public string Name { get; set; } = null!;
-            public IEnumerable<CareerSimpleDto> Careers { get; set; } = new List<CareerSimpleDto>();
-        }
-
-        // DTO simplificado de carrera (para usar dentro de Subject)
-        public class CareerSimpleDto
-        {
-            public int Id { get; set; }
-            public string Name { get; set; } = null!;
         }
     }
 }

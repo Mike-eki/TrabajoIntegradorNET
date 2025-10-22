@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models.Entities;
+using Models.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -257,56 +258,6 @@ namespace WebAPI.Controllers
             return NoContent();
         }
 
-        // DTO para crear inscripción (solo Admin/Profesor)
-        public class EnrollmentCreateDto
-        {
-            public int StudentId { get; set; }
-            public int CommissionId { get; set; }
-        }
-
-        // DTO para devolver inscripción
-        public class EnrollmentResponseDto
-        {
-            public int Id { get; set; }
-            public int StudentId { get; set; }
-            public int CommissionId { get; set; }
-            public string SubjectName { get; set; } = null!;
-            public DateTime EnrollmentDate { get; set; }
-            public int? FinalGrade { get; set; }
-            public string Status { get; set; } = null!;
-        }
-
-        public class EnrollmentStudentDto
-        {
-            public int EnrollmentId { get; set; }
-            public string SubjectName { get; set; } = null!;
-            public string CommissionDay { get; set; } = null!;
-            public string StartTime { get; set; } = null!;
-            public string EndTime { get; set; } = null!;
-            public int CycleYear { get; set; }
-            public string Status { get; set; } = null!;
-            public int? FinalGrade { get; set; }
-        }
-
-        public class ProfessorCommissionDto
-        {
-            public int CommissionId { get; set; }
-            public string SubjectName { get; set; } = null!;
-            public int CycleYear { get; set; }
-            public string DayOfWeek { get; set; } = null!;
-            public string StartTime { get; set; } = null!;
-            public string EndTime { get; set; } = null!;
-            public int Capacity { get; set; }
-            public IEnumerable<StudentEnrollmentDto> Students { get; set; } = new List<StudentEnrollmentDto>();
-        }
-
-        public class StudentEnrollmentDto
-        {
-            public int EnrollmentId { get; set; }
-            public int StudentId { get; set; }
-            public string? StudentName { get; set; }  // opcional, si tenés el nombre del usuario
-            public string Status { get; set; } = null!;
-            public int? FinalGrade { get; set; }
-        }
+        
     }
 }

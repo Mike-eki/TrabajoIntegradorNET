@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADO.NET", "Repositories.Ado
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework", "EntityFramework\EntityFramework.csproj", "{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormsAdmin", "WinFormsAdmin\WinFormsAdmin.csproj", "{24ACF41E-2D51-4824-87E0-E808FEE5150D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C8CB08E-C79E-4B69-8EAA-A24EA5B71153}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24ACF41E-2D51-4824-87E0-E808FEE5150D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24ACF41E-2D51-4824-87E0-E808FEE5150D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24ACF41E-2D51-4824-87E0-E808FEE5150D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24ACF41E-2D51-4824-87E0-E808FEE5150D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

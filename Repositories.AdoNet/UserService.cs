@@ -29,13 +29,13 @@ namespace ADO.NET
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
-        public async Task<(bool IsValid, string? AccessToken, string? RefreshToken)> ValidateUserAsync(string username, string plainPassword, CancellationToken ct = default)
+        public async Task<(bool IsValid, string? AccessToken, string? RefreshToken, string? Role)> ValidateUserAsync(string username, string plainPassword, CancellationToken ct = default)
         {
             var user = await _repo.GetByUsernameAsync(username, ct);
             if (user == null)
             {
                 _logger.LogWarning("Validation failed: User {Username} not found.", username);
-                return (false, null, null);
+                return (false, null, null, null);
             }
 
             bool isValid;
@@ -63,7 +63,7 @@ namespace ADO.NET
             if (!isValid)
             {
                 _logger.LogWarning("Validation failed for user {Username}: Invalid password.", username);
-                return (false, null, null);
+                return (false, null, null, null);
             }
 
             // Generate access token and refresh token
@@ -79,7 +79,7 @@ namespace ADO.NET
             };
             await _refreshTokenRepo.CreateAsync(refreshTokenEntity, ct);
             _logger.LogInformation("Access and refresh tokens generated for user {Username}.", username);
-            return (true, accessToken, refreshToken);
+            return (true, accessToken, refreshToken, UserRoleConverter.ToString(user.Role));
         }
 
         public async Task<(bool IsValid, string? AccessToken, string? RefreshToken)> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)

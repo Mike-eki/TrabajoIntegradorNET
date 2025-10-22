@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Models.Entities;
+using Models.DTOs;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -27,14 +28,14 @@ namespace MyApp.Controllers
         public async Task<IActionResult> ValidateUser([FromBody] LoginRequest request)
         {
             _logger.LogInformation("Validating user {Username}.", request.Username);
-            var (isValid, accessToken, refreshToken) = await _userService.ValidateUserAsync(request.Username, request.Password);
+            var (isValid, accessToken, refreshToken, role) = await _userService.ValidateUserAsync(request.Username, request.Password);
             if (!isValid)
             {
                 _logger.LogWarning("Validation failed for user {Username}.", request.Username);
                 return Unauthorized(new { Message = "Invalid username or password" });
             }
             _logger.LogInformation("User validation successful for {Username}.", request.Username);
-            return Ok(new { IsValid = true, AccessToken = accessToken, RefreshToken = refreshToken });
+            return Ok(new { IsValid = true, AccessToken = accessToken, RefreshToken = refreshToken, Role = role });
         }
 
         [HttpPost("refresh")]
@@ -58,7 +59,7 @@ namespace MyApp.Controllers
             var role = UserRoleConverter.FromString(request.Role);
             var (hash, salt) = PasswordHasher.ComputeHash(request.Password);
 
-            // ✨ CREACIÓN DEL OBJETO USER ACTUALIZADA ✨
+
             var user = new User
             {
                 Username = request.Username,
@@ -71,7 +72,7 @@ namespace MyApp.Controllers
             };
             await _repo.CreateAsync(user);
 
-            // ✨ RESPUESTA ACTUALIZADA PARA DEVOLVER MÁS DATOS ✨
+
             _logger.LogInformation("User {Username} created with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
             return Ok(new { user.Id, user.Username, user.Legajo, user.Email, user.Fullname, Role = UserRoleConverter.ToString(user.Role) });
         }
@@ -160,15 +161,4 @@ namespace MyApp.Controllers
         }
     }
 
-    public record LoginRequest(string Username, string Password);
-    // ✨ DTO ACTUALIZADO ✨
-    public record UserRequest(
-        string Username,
-        string Password,
-        string Legajo,
-        string Email,
-        string Fullname,
-        string Role = "Student"
-    );
-    public record RefreshTokenRequest(string RefreshToken);
 }

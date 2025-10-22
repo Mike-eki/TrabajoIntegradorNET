@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models.Entities;
+using Models.DTOs;
 using System.Threading.Tasks;
-using static MyApp.Controllers.CareersController.CareerResponseDto;
 
 namespace MyApp.Controllers
 {
@@ -105,21 +105,6 @@ namespace MyApp.Controllers
             return NoContent();
         }
 
-        public class CareerCreateDto
-        {
-            public string Name { get; set; } = null!;
-        }
-
-        public class CareerResponseDto
-        {
-            public int Id { get; set; }
-            public string Name { get; set; } = null!;
-            public IEnumerable<SubjectSimpleDto> Subjects { get; set; } = new List<SubjectSimpleDto>();
-            public class SubjectSimpleDto
-            {
-                public int Id { get; set; }
-                public string Name { get; set; } = null!;
-            }
-        }
+        
     }
 }
