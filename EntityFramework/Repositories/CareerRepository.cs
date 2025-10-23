@@ -33,7 +33,36 @@ namespace EntityFramework
             {
                 return await _context.Careers.FindAsync(id);
             }
+            public async Task<Career> AssignSubjectsToCareer(Career career, int[] subjectIds)
+            {
+                // Validación: que existan todas las subjects
+                var subjects = await _context.Subjects
+                                            .Where(s => subjectIds.Contains(s.Id))
+                                            .ToListAsync();
+                if (subjects.Count != subjectIds.Length)
+                    throw new InvalidOperationException("One or more careers not found.");
 
+                // Limpiar la lista
+                career.Subjects.Clear();
+
+                // Asignar relaciones
+                foreach (var s in subjects)
+                {
+                    career.Subjects.Add(s);
+                    s.Careers.Add(career);   // <‑‑ mantener la navegación inversa
+                }
+
+                _context.Careers.Update(career);
+                await _context.SaveChangesAsync();
+
+                // Cargar la navegación inversa para que el objeto devuelto esté “completo”
+                await _context.Entry(career)
+                  .Collection(c => c.Subjects)
+                  .LoadAsync();
+
+
+                return career;
+            }
             public async Task AddAsync(Career career)
             {
                 await _context.Careers.AddAsync(career);

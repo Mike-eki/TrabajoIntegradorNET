@@ -9,14 +9,15 @@ namespace MyApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")] // ¡Protegemos todo el controlador solo para Admins!
+    [Authorize(Roles = "Admin")]
     public class CareersController : ControllerBase
     {
         private readonly ICareerRepository _repo;
-
-        public CareersController(ICareerRepository repo)
+        private readonly ILogger<CareersController> _logger;
+        public CareersController(ICareerRepository repo, ILogger<CareersController> logger)
         {
             _repo = repo;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -59,8 +60,40 @@ namespace MyApp.Controllers
             return Ok(response);
         }
 
+        [HttpPost("{id}/Subjects")]
+        public async Task<IActionResult> AssignSubjects(int id, [FromBody] int[] subjectIds)
+        {
+            try
+            {
+                _logger.LogInformation("Assigning careers to subject {CareerId}: {SubjectIds}", id, string.Join(", ", subjectIds));
+                var career = await _repo.GetByIdAsync(id);
+                if (career == null)
+                    return NotFound();
+
+                _logger.LogInformation("Career found: {CareerName}", career.Name);
+                var updated = await _repo.AssignSubjectsToCareer(career, subjectIds);
+
+                _logger.LogInformation("Subjects assigned successfully to subject {CareerId}", id);
+                var response = new CareerResponseDto
+                {
+                    Id = updated.Id,
+                    Name = updated.Name,
+                    Subjects = updated.Subjects.Select(c => new SubjectSimpleDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name
+                    })
+                };
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
         [HttpPost]
-        public async Task<IActionResult> CreateCareer([FromBody] CareerCreateDto dto)
+        public async Task<IActionResult> CreateCareer([FromBody] CareerSimpleDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -68,11 +101,10 @@ namespace MyApp.Controllers
             var career = new Career { Name = dto.Name };
             await _repo.AddAsync(career);
 
-            var response = new CareerResponseDto
+            var response = new CareerSimpleDto
             {
                 Id = career.Id,
                 Name = career.Name,
-                Subjects = new List<SubjectSimpleDto>()
             };
 
             return CreatedAtAction(nameof(GetCareer), new { id = career.Id }, response);

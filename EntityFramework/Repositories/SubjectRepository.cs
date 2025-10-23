@@ -27,23 +27,42 @@ namespace EntityFramework.Repositories
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 
-        public async Task<Subject> AddAsync(Subject subject, int[] careerIds)
+        public async Task<Subject> AssignCareersToSubject(Subject subject, int[] careerIds)
         {
             // Validación: que existan todas las careers
             var careers = await _context.Careers.Where(c => careerIds.Contains(c.Id)).ToListAsync();
             if (careers.Count != careerIds.Length)
                 throw new InvalidOperationException("One or more careers not found.");
 
+            // Limpiar la lista
+            subject.Careers.Clear();
+
             // Asignar relaciones
             foreach (var c in careers)
+            {
                 subject.Careers.Add(c);
+                c.Subjects.Add(subject);   // <‑‑ mantener la navegación inversa
+            }
 
+            _context.Update(subject);
+            await _context.SaveChangesAsync();
+
+            // Cargar la navegación inversa para que el objeto devuelto esté “completo”
+            await _context.Entry(subject)
+                  .Collection(s => s.Careers)
+                  .LoadAsync();
+
+            return subject;
+        }
+
+        public async Task<Subject> AddAsync(Subject subject)
+        {
             await _context.Subjects.AddAsync(subject);
             await _context.SaveChangesAsync();
             return subject;
         }
 
-        public async Task UpdateAsync(Subject subject, int[] careerIds)
+        public async Task UpdateAsync(Subject subject)
         {
             // Obtener la entidad actual
             var existing = await _context.Subjects
@@ -55,13 +74,13 @@ namespace EntityFramework.Repositories
             existing.Name = subject.Name;
 
             // Validar careers
-            var careers = await _context.Careers.Where(c => careerIds.Contains(c.Id)).ToListAsync();
-            if (careers.Count != careerIds.Length)
-                throw new InvalidOperationException("One or more careers not found.");
+            //var careers = await _context.Careers.Where(c => careerIds.Contains(c.Id)).ToListAsync();
+            //if (careers.Count != careerIds.Length)
+            //    throw new InvalidOperationException("One or more careers not found.");
 
-            // Reemplazar coleccion de careers (manejo de many-to-many)
-            existing.Careers.Clear();
-            foreach (var c in careers) existing.Careers.Add(c);
+            //// Reemplazar coleccion de careers (manejo de many-to-many)
+            //existing.Careers.Clear();
+            //foreach (var c in careers) existing.Careers.Add(c);
 
             _context.Subjects.Update(existing);
             await _context.SaveChangesAsync();

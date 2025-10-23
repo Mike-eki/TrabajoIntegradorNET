@@ -11,8 +11,9 @@ namespace EntityFramework.Repositories
     {
         Task<IEnumerable<Subject>> GetAllAsync();
         Task<Subject?> GetByIdAsync(int id);
-        Task<Subject> AddAsync(Subject subject, int[] careerIds);
-        Task UpdateAsync(Subject subject, int[] careerIds);
+        Task<Subject> AssignCareersToSubject(Subject subject, int[] careerIds);
+        Task<Subject> AddAsync(Subject subject);
+        Task UpdateAsync(Subject subject);
         Task DeleteAsync(int id);
     }
 }
