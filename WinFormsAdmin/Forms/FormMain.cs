@@ -15,11 +15,14 @@ namespace WinFormsAdmin.Forms
     public partial class FormMain : Form
     {
         private readonly ApiClient _apiClient;
+        private bool _logoutExecuted = false;
 
         public FormMain(ApiClient apiClient)
         {
             InitializeComponent();
             _apiClient = apiClient;
+
+            this.FormClosed += FormMain_FormClosed;
         }
 
         private void menuCarreras_Click(object sender, EventArgs e)
@@ -46,6 +49,24 @@ namespace WinFormsAdmin.Forms
         {
             await _apiClient.LogoutAsync();
             Application.Exit();
+        }
+
+        
+
+        private async void FormMain_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            if (_logoutExecuted) return;
+            _logoutExecuted = true;
+
+            try
+            {
+                await _apiClient.LogoutAsync();
+                Console.WriteLine("✅ Sesión cerrada correctamente al salir.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Error al cerrar sesión: {ex.Message}");
+            }
         }
     }
 }

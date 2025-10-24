@@ -1,9 +1,10 @@
-﻿using System.Net.Http;
+﻿using Models.DTOs;
+using System.Net;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Models.DTOs;
 
 namespace WinFormsAdmin.Services
 {
@@ -11,6 +12,7 @@ namespace WinFormsAdmin.Services
     {
         private readonly HttpClient _httpClient;
         private static string? _accessToken;
+        private static string? _refreshToken;
 
         // URL base de tu WebAPI
         private const string BaseUrl = "https://localhost:7114"; // ⚠️ Ajustar al puerto de tu API
@@ -37,6 +39,7 @@ namespace WinFormsAdmin.Services
                     if (authResponse != null && authResponse.IsValid)
                     {
                         _accessToken = authResponse.AccessToken;
+                        _refreshToken = authResponse.RefreshToken;
                         _httpClient.DefaultRequestHeaders.Authorization =
                             new AuthenticationHeaderValue("Bearer", _accessToken);
                         return (authResponse, null);
@@ -98,10 +101,50 @@ namespace WinFormsAdmin.Services
             }
         }
 
+        public async Task<bool> RefreshTokenAsync()
+        {
+            if (string.IsNullOrEmpty(_accessToken) || string.IsNullOrEmpty(_refreshToken))
+                return false;
+
+            var request = new
+            {
+                AccessToken = _accessToken,
+                RefreshToken = _refreshToken
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/api/Users/refresh", request);
+
+            if (!response.IsSuccessStatusCode)
+                return false;
+
+            var newTokens = await response.Content.ReadFromJsonAsync<AuthResponse>();
+            if (newTokens == null || string.IsNullOrEmpty(newTokens.AccessToken))
+                return false;
+
+            _accessToken = newTokens.AccessToken;
+            _refreshToken = newTokens.RefreshToken;
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _accessToken);
+
+            return true;
+        }
+
+
         // Métodos genéricos para CRUD
         public async Task<T?> GetAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetAsync(endpoint);
+
+            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                if (await RefreshTokenAsync())
+                {
+                    // Intentar de nuevo con el token renovado
+                    response = await _httpClient.GetAsync(endpoint);
+                }
+            }
+
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<T>();
         }
@@ -109,6 +152,17 @@ namespace WinFormsAdmin.Services
         public async Task<List<T>?> GetListAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetAsync(endpoint);
+
+            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                if (await RefreshTokenAsync())
+                {
+                    // Intentar de nuevo con el token renovado
+                    response = await _httpClient.GetAsync(endpoint);
+                }
+            }
+
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<List<T>>();
         }
@@ -116,6 +170,17 @@ namespace WinFormsAdmin.Services
         public async Task<T?> PostAsync<T>(string endpoint, object data)
         {
             var response = await _httpClient.PostAsJsonAsync(endpoint, data);
+
+            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                if (await RefreshTokenAsync())
+                {
+                    // Intentar de nuevo con el token renovado
+                    response = await _httpClient.GetAsync(endpoint);
+                }
+            }
+
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<T>();
         }
@@ -123,12 +188,34 @@ namespace WinFormsAdmin.Services
         public async Task<bool> PutAsync(string endpoint, object data)
         {
             var response = await _httpClient.PutAsJsonAsync(endpoint, data);
+
+            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                if (await RefreshTokenAsync())
+                {
+                    // Intentar de nuevo con el token renovado
+                    response = await _httpClient.GetAsync(endpoint);
+                }
+            }
+
             return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> DeleteAsync(string endpoint)
         {
             var response = await _httpClient.DeleteAsync(endpoint);
+
+            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                if (await RefreshTokenAsync())
+                {
+                    // Intentar de nuevo con el token renovado
+                    response = await _httpClient.GetAsync(endpoint);
+                }
+            }
+
             return response.IsSuccessStatusCode;
         }
 

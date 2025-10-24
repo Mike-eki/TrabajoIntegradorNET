@@ -26,12 +26,16 @@ namespace EntityFramework
 
             public async Task<IEnumerable<Career>> GetAllAsync()
             {
-                return await _context.Careers.ToListAsync();
+                return await _context.Careers
+                    .Include(c => c.Subjects)
+                    .ToListAsync();
             }
 
             public async Task<Career?> GetByIdAsync(int id)
             {
-                return await _context.Careers.FindAsync(id);
+                return await _context.Careers
+                    .Include(c => c.Subjects)
+                    .FirstOrDefaultAsync(c => c.Id == id);
             }
             public async Task<Career> AssignSubjectsToCareer(Career career, int[] subjectIds)
             {

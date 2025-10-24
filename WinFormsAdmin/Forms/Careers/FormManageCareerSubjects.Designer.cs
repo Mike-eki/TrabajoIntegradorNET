@@ -72,6 +72,7 @@
             btnSave.TabIndex = 2;
             btnSave.Text = "Guardar cambios";
             btnSave.UseVisualStyleBackColor = true;
+            btnSave.Click += btnSave_Click;
             // 
             // btnCancel
             // 
@@ -81,6 +82,7 @@
             btnCancel.TabIndex = 3;
             btnCancel.Text = "Cancelar";
             btnCancel.UseVisualStyleBackColor = true;
+            btnCancel.Click += btnCancel_Click;
             // 
             // FormManageCareerSubjects
             // 

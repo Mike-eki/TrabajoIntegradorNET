@@ -105,7 +105,7 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpPost("{id}/Careers")]
+        [HttpPut("{id}/Careers")]
         public async Task<IActionResult> AssignCareers(int id, [FromBody] int[] careerIds)
         {
             try

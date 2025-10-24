@@ -60,7 +60,7 @@ namespace MyApp.Controllers
             return Ok(response);
         }
 
-        [HttpPost("{id}/Subjects")]
+        [HttpPut("{id}/Subjects")]
         public async Task<IActionResult> AssignSubjects(int id, [FromBody] int[] subjectIds)
         {
             try

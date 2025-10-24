@@ -66,7 +66,7 @@ namespace WinFormsAdmin.Forms.Careers
 
             try
             {
-                var careerDto = new CareerCreateDto { Name = txtName.Text.Trim() };
+                var careerDto = new CareerSimpleDto { Name = txtName.Text.Trim() };
 
                 if (_careerId.HasValue)
                 {
