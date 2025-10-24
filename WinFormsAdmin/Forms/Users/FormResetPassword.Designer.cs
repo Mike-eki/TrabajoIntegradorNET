@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            txtUsername = new TextBox();
             lblUsername = new Label();
             txtNewPassword = new TextBox();
             lblNewPassword = new Label();
@@ -37,18 +36,10 @@
             btnGeneratePassword = new Button();
             SuspendLayout();
             // 
-            // txtUsername
-            // 
-            txtUsername.Location = new Point(289, 146);
-            txtUsername.Name = "txtUsername";
-            txtUsername.ReadOnly = true;
-            txtUsername.Size = new Size(196, 23);
-            txtUsername.TabIndex = 0;
-            // 
             // lblUsername
             // 
             lblUsername.AutoSize = true;
-            lblUsername.Location = new Point(221, 149);
+            lblUsername.Location = new Point(316, 104);
             lblUsername.Name = "lblUsername";
             lblUsername.Size = new Size(50, 15);
             lblUsername.TabIndex = 1;
@@ -56,7 +47,7 @@
             // 
             // txtNewPassword
             // 
-            txtNewPassword.Location = new Point(289, 187);
+            txtNewPassword.Location = new Point(260, 174);
             txtNewPassword.Name = "txtNewPassword";
             txtNewPassword.Size = new Size(196, 23);
             txtNewPassword.TabIndex = 2;
@@ -64,7 +55,7 @@
             // lblNewPassword
             // 
             lblNewPassword.AutoSize = true;
-            lblNewPassword.Location = new Point(166, 190);
+            lblNewPassword.Location = new Point(258, 156);
             lblNewPassword.Name = "lblNewPassword";
             lblNewPassword.Size = new Size(105, 15);
             lblNewPassword.TabIndex = 3;
@@ -72,7 +63,7 @@
             // 
             // btnResetPassword
             // 
-            btnResetPassword.Location = new Point(289, 233);
+            btnResetPassword.Location = new Point(260, 220);
             btnResetPassword.Name = "btnResetPassword";
             btnResetPassword.Size = new Size(75, 23);
             btnResetPassword.TabIndex = 4;
@@ -82,7 +73,7 @@
             // 
             // btnCancel
             // 
-            btnCancel.Location = new Point(410, 233);
+            btnCancel.Location = new Point(381, 220);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(75, 23);
             btnCancel.TabIndex = 5;
@@ -92,7 +83,7 @@
             // 
             // btnGeneratePassword
             // 
-            btnGeneratePassword.Location = new Point(508, 187);
+            btnGeneratePassword.Location = new Point(479, 174);
             btnGeneratePassword.Name = "btnGeneratePassword";
             btnGeneratePassword.Size = new Size(128, 23);
             btnGeneratePassword.TabIndex = 6;
@@ -111,7 +102,6 @@
             Controls.Add(lblNewPassword);
             Controls.Add(txtNewPassword);
             Controls.Add(lblUsername);
-            Controls.Add(txtUsername);
             Name = "FormResetPassword";
             Text = "FormResetPassword";
             ResumeLayout(false);
@@ -119,8 +109,6 @@
         }
 
         #endregion
-
-        private TextBox txtUsername;
         private Label lblUsername;
         private TextBox txtNewPassword;
         private Label lblNewPassword;
