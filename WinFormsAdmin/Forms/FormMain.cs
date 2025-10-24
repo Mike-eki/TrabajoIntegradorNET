@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using WinFormsAdmin.Services;
 using WinFormsAdmin.Forms.Careers;
 using WinFormsAdmin.Forms.Subjects;
+using WinFormsAdmin.Forms.Users;
 
 namespace WinFormsAdmin.Forms
 {
@@ -66,10 +67,31 @@ namespace WinFormsAdmin.Forms
             careerManager.Show();
         }
 
+        private void menuUsuarios_Click(object sender, EventArgs e)
+        {
+            // Verificar si ya hay una ventana de materias abierta
+            foreach (Form childForm in this.MdiChildren)
+            {
+                if (childForm is FormUserManager)
+                {
+                    childForm.Activate();
+                    return;
+                }
+            }
+
+            // Crear nueva ventana
+            var usersManager = new FormUserManager(_apiClient)
+            {
+                MdiParent = this
+            };
+            usersManager.Show();
+        }
+
         private async void menuSalir_Click(object sender, EventArgs e)
         {
             await _apiClient.LogoutAsync();
-            Application.Exit();
+            new FormLogin().Show();
+            this.Close();
         }
 
         private async void FormMain_FormClosed(object? sender, FormClosedEventArgs e)

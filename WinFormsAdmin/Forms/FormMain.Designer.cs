@@ -88,6 +88,7 @@
             usuariosToolStripMenuItem.Name = "usuariosToolStripMenuItem";
             usuariosToolStripMenuItem.Size = new Size(180, 22);
             usuariosToolStripMenuItem.Text = "Usuarios";
+            usuariosToolStripMenuItem.Click += menuUsuarios_Click;
             // 
             // opcionesToolStripMenuItem
             // 

@@ -132,5 +132,36 @@ namespace ADO.NET
                 Role = UserRoleConverter.FromString(rdr.GetString(7))
             };
         }
+
+        public async Task<List<User>> GetAllAsync(CancellationToken ct = default)
+        {
+            var users = new List<User>();
+
+            const string sql = @"SELECT Id, Username, Legajo, Email, Fullname, Role 
+                        FROM dbo.Users;";
+
+            await using var conn = _factory.CreateApp();
+            await using var cmd = new SqlCommand(sql, conn);
+            await conn.OpenAsync(ct);
+
+            await using var rdr = await cmd.ExecuteReaderAsync(ct);
+
+            while (await rdr.ReadAsync(ct))
+            {
+                var user = new User
+                {
+                    Id = rdr.GetInt32(0),
+                    Username = rdr.GetString(1),
+                    Legajo = rdr.GetString(2),
+                    Email = rdr.GetString(3),
+                    Fullname = rdr.GetString(4),
+                    Role = UserRoleConverter.FromString(rdr.GetString(5))
+                };
+
+                users.Add(user);
+            }
+
+            return users;
+        }
     }
 }

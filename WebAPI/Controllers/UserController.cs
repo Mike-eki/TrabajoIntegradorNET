@@ -53,7 +53,7 @@ namespace MyApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] UserRequest request)
+        public async Task<IActionResult> CreateUser([FromBody] UserCreateDto request, CancellationToken ct = default)
         {
             _logger.LogInformation("Creating user {Username} with role {Role}.", request.Username, request.Role);
             var role = UserRoleConverter.FromString(request.Role);
@@ -65,12 +65,12 @@ namespace MyApp.Controllers
                 Username = request.Username,
                 Legajo = request.Legajo,
                 Email = request.Email,
-                Fullname = request.Fullname,
+                Fullname = request.FullName,
                 PasswordHash = hash,
                 Salt = salt,
                 Role = role
             };
-            await _repo.CreateAsync(user);
+            await _repo.CreateAsync(user, ct);
 
 
             _logger.LogInformation("User {Username} created with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
@@ -79,50 +79,87 @@ namespace MyApp.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(int id)
+        public async Task<IActionResult> GetUser(int id, CancellationToken ct)
         {
             _logger.LogInformation("Retrieving user with ID {Id}.", id);
-            var user = await _repo.GetByIdAsync(id);
+            var user = await _repo.GetByIdAsync(id, ct);
             if (user == null)
             {
                 _logger.LogWarning("User with ID {Id} not found.", id);
                 return NotFound();
             }
             _logger.LogInformation("User {Username} retrieved with ID {Id}.", user.Username, user.Id);
-            return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role), user.Email, user.Fullname, user.Legajo });
+            var response = new UserResponseDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Legajo = user.Legajo,
+                Email = user.Email,
+                FullName = user.Fullname,
+                Role = UserRoleConverter.ToString(user.Role)
+            };
+
+            return Ok(response);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers(CancellationToken ct = default)
+        {
+            _logger.LogInformation("Retrieving all users.");
+
+            var users = await _repo.GetAllAsync(ct);
+
+            if (users == null || users.Count == 0)
+            {
+                _logger.LogWarning("No users found in the system.");
+                return Ok(new List<UserResponseDto>()); // devuelve lista vacía (no error)
+            }
+
+            var dtoList = users.Select(u => new UserResponseDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Legajo = u.Legajo,
+                Email = u.Email,
+                FullName = u.Fullname,
+                Role = u.Role.ToString()
+            }).ToList();
+
+            _logger.LogInformation("Retrieved {Count} users successfully.", dtoList.Count);
+
+            return Ok(dtoList);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserRequest request)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDto request, CancellationToken ct)
         {
             _logger.LogInformation("Updating user with ID {Id} to role {Role}.", id, request.Role);
-            var user = await _repo.GetByIdAsync(id);
+            var user = await _repo.GetByIdAsync(id, ct);
             if (user == null)
             {
                 _logger.LogWarning("User with ID {Id} not found.", id);
                 return NotFound();
             }
             var role = UserRoleConverter.FromString(request.Role); // Convertir string a enum
-            var (hash, salt) = PasswordHasher.ComputeHash(request.Password);
-            user.Username = request.Username;
-            user.PasswordHash = hash;
-            user.Salt = salt;
+
             user.Role = role;
             user.Email = request.Email;
-            user.Legajo = request.Legajo;
-            user.Fullname = request.Fullname;
+            user.Fullname = request.FullName;
+
             await _repo.UpdateAsync(user);
+
             _logger.LogInformation("User {Username} updated with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
             return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role), user.Email, user.Fullname, user.Legajo });
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(int id, CancellationToken ct)
         {
             _logger.LogInformation("Deleting user with ID {Id}.", id);
-            var user = await _repo.GetByIdAsync(id);
+            var user = await _repo.GetByIdAsync(id, ct);
             if (user == null)
             {
                 _logger.LogWarning("User with ID {Id} not found.", id);
@@ -158,6 +195,30 @@ namespace MyApp.Controllers
             await _userService.LogoutAsync(userId, accessToken);
             _logger.LogInformation("User ID {UserId} logged out successfully.", userId);
             return Ok(new { Message = "Logout successful" });
+        }
+
+        [Authorize]
+        [HttpPost("{id}/reset-password")]
+        public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetPasswordDto request, CancellationToken ct)
+        {
+            _logger.LogInformation("Resetting password for user ID {Id}.", id);
+
+            var user = await _repo.GetByIdAsync(id, ct);
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {Id} not found.", id);
+                return NotFound();
+            }
+
+            var (hash, salt) = PasswordHasher.ComputeHash(request.NewPassword);
+            user.PasswordHash = hash;
+            user.Salt = salt;
+
+            await _repo.UpdateAsync(user);
+            _logger.LogInformation("Password reset succesfully for user ID {Id}.", id);
+
+            return Ok(new { Message = "Passworded reset succesfully" });
+
         }
     }
 
