@@ -69,6 +69,7 @@
             materiasToolStripMenuItem.Name = "materiasToolStripMenuItem";
             materiasToolStripMenuItem.Size = new Size(180, 22);
             materiasToolStripMenuItem.Text = "Materias";
+            materiasToolStripMenuItem.Click += menuMaterias_Click;
             // 
             // comisionesToolStripMenuItem
             // 
@@ -98,7 +99,7 @@
             // cerrarSesiónToolStripMenuItem
             // 
             cerrarSesiónToolStripMenuItem.Name = "cerrarSesiónToolStripMenuItem";
-            cerrarSesiónToolStripMenuItem.Size = new Size(180, 22);
+            cerrarSesiónToolStripMenuItem.Size = new Size(142, 22);
             cerrarSesiónToolStripMenuItem.Text = "Cerrar sesión";
             cerrarSesiónToolStripMenuItem.Click += menuSalir_Click;
             // 

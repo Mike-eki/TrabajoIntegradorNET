@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinFormsAdmin.Services;
 using WinFormsAdmin.Forms.Careers;
+using WinFormsAdmin.Forms.Subjects;
 
 namespace WinFormsAdmin.Forms
 {
@@ -45,13 +46,31 @@ namespace WinFormsAdmin.Forms
             careerManager.Show();
         }
 
+        private void menuMaterias_Click(object sender, EventArgs e)
+        {
+            // Verificar si ya hay una ventana de materias abierta
+            foreach (Form childForm in this.MdiChildren)
+            {
+                if (childForm is FormSubjectManager)
+                {
+                    childForm.Activate();
+                    return;
+                }
+            }
+
+            // Crear nueva ventana
+            var careerManager = new FormSubjectManager(_apiClient)
+            {
+                MdiParent = this
+            };
+            careerManager.Show();
+        }
+
         private async void menuSalir_Click(object sender, EventArgs e)
         {
             await _apiClient.LogoutAsync();
             Application.Exit();
         }
-
-        
 
         private async void FormMain_FormClosed(object? sender, FormClosedEventArgs e)
         {

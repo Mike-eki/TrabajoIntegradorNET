@@ -73,15 +73,6 @@ namespace EntityFramework.Repositories
 
             existing.Name = subject.Name;
 
-            // Validar careers
-            //var careers = await _context.Careers.Where(c => careerIds.Contains(c.Id)).ToListAsync();
-            //if (careers.Count != careerIds.Length)
-            //    throw new InvalidOperationException("One or more careers not found.");
-
-            //// Reemplazar coleccion de careers (manejo de many-to-many)
-            //existing.Careers.Clear();
-            //foreach (var c in careers) existing.Careers.Add(c);
-
             _context.Subjects.Update(existing);
             await _context.SaveChangesAsync();
         }

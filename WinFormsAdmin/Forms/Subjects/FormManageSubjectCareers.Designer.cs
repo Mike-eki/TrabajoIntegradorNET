@@ -1,6 +1,6 @@
-﻿namespace WinFormsAdmin.Forms.Careers
+﻿namespace WinFormsAdmin.Forms.Subjects
 {
-    partial class FormManageCareerSubjects
+    partial class FormManageSubjectCareers
     {
         /// <summary>
         /// Required designer variable.
@@ -28,48 +28,47 @@
         /// </summary>
         private void InitializeComponent()
         {
-            CheckedListBox clbSubjects;
-            lblCareerName = new Label();
+            lblSubjectName = new Label();
             groupBox1 = new GroupBox();
+            clbCareers = new CheckedListBox();
             btnSave = new Button();
             btnCancel = new Button();
-            clbSubjects = new CheckedListBox();
             groupBox1.SuspendLayout();
             SuspendLayout();
             // 
-            // lblCareerName
+            // lblSubjectName
             // 
-            lblCareerName.AutoSize = true;
-            lblCareerName.Location = new Point(163, 31);
-            lblCareerName.Name = "lblCareerName";
-            lblCareerName.Size = new Size(160, 15);
-            lblCareerName.TabIndex = 0;
-            lblCareerName.Text = "Carrera: [Nombre de Carrera]";
+            lblSubjectName.AutoSize = true;
+            lblSubjectName.Location = new Point(316, 60);
+            lblSubjectName.Name = "lblSubjectName";
+            lblSubjectName.Size = new Size(164, 15);
+            lblSubjectName.TabIndex = 0;
+            lblSubjectName.Text = "Materia: [Nombre de Materia]";
             // 
             // groupBox1
             // 
-            groupBox1.Controls.Add(clbSubjects);
-            groupBox1.Location = new Point(94, 59);
+            groupBox1.Controls.Add(clbCareers);
+            groupBox1.Location = new Point(157, 89);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(295, 219);
+            groupBox1.Size = new Size(474, 277);
             groupBox1.TabIndex = 1;
             groupBox1.TabStop = false;
-            groupBox1.Text = "Materias asociadas";
+            groupBox1.Text = "Carreras asociadas";
             // 
-            // clbSubjects
+            // clbCareers
             // 
-            clbSubjects.Dock = DockStyle.Fill;
-            clbSubjects.FormattingEnabled = true;
-            clbSubjects.Location = new Point(3, 19);
-            clbSubjects.Name = "clbSubjects";
-            clbSubjects.Size = new Size(289, 197);
-            clbSubjects.TabIndex = 0;
+            clbCareers.Dock = DockStyle.Fill;
+            clbCareers.FormattingEnabled = true;
+            clbCareers.Location = new Point(3, 19);
+            clbCareers.Name = "clbCareers";
+            clbCareers.Size = new Size(468, 255);
+            clbCareers.TabIndex = 0;
             // 
             // btnSave
             // 
-            btnSave.Location = new Point(97, 294);
+            btnSave.Location = new Point(160, 387);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(113, 23);
+            btnSave.Size = new Size(122, 23);
             btnSave.TabIndex = 2;
             btnSave.Text = "Guardar cambios";
             btnSave.UseVisualStyleBackColor = true;
@@ -77,7 +76,7 @@
             // 
             // btnCancel
             // 
-            btnCancel.Location = new Point(216, 294);
+            btnCancel.Location = new Point(299, 387);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(75, 23);
             btnCancel.TabIndex = 3;
@@ -85,21 +84,17 @@
             btnCancel.UseVisualStyleBackColor = true;
             btnCancel.Click += btnCancel_Click;
             // 
-            // FormManageCareerSubjects
+            // FormManageSubjectCareers
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(484, 361);
+            ClientSize = new Size(800, 450);
             Controls.Add(btnCancel);
             Controls.Add(btnSave);
             Controls.Add(groupBox1);
-            Controls.Add(lblCareerName);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            Name = "FormManageCareerSubjects";
-            StartPosition = FormStartPosition.CenterParent;
-            Text = "FormManageCareerSubjects";
+            Controls.Add(lblSubjectName);
+            Name = "FormManageSubjectCareers";
+            Text = "FormManageSubjectCareers";
             groupBox1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
@@ -107,9 +102,9 @@
 
         #endregion
 
-        private Label lblCareerName;
+        private Label lblSubjectName;
         private GroupBox groupBox1;
-        private CheckedListBox clbSubjects;
+        private CheckedListBox clbCareers;
         private Button btnSave;
         private Button btnCancel;
     }

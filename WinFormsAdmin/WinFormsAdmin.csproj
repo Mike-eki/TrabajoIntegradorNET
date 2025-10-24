@@ -11,7 +11,6 @@
   <ItemGroup>
     <Folder Include="Forms\Commissions\" />
     <Folder Include="Forms\Enrollments\" />
-    <Folder Include="Forms\Subjects\" />
   </ItemGroup>
 
   <ItemGroup>
