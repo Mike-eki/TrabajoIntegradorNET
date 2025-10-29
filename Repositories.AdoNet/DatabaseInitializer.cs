@@ -27,6 +27,7 @@ namespace ADO.NET
             _logger.LogInformation("Starting database initialization for {DatabaseName}.", _databaseName);
             await CreateDatabaseIfNotExistsAsync(ct);
             await CreateUsersTableIfNotExistsAsync(ct);
+            await CreateUserCareerTableIfNotExistsAsync(ct);
             await CreateRefreshTokensTableIfNotExistsAsync(ct);
             await CreateRevokedAccessTokensTableIfNotExistsAsync(ct);
             await CreateValidateUserProcIfNotExistsAsync(ct);
@@ -132,6 +133,77 @@ namespace ADO.NET
             _logger.LogInformation("Executing SQL to create RevokedAccessTokens table.");
             await ExecuteAsync(_factory.CreateApp(), sql, ct);
         }
+
+        private async Task CreateUserCareerTableIfNotExistsAsync(CancellationToken ct)
+        {
+            const string sql = @"
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM sys.tables t 
+        JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE t.name = 'UserCareer' AND s.name = 'dbo'
+    )
+    BEGIN
+        CREATE TABLE dbo.UserCareer
+        (
+            UserId INT NOT NULL,
+            CareerId INT NOT NULL,
+            CONSTRAINT PK_UserCareer PRIMARY KEY (UserId, CareerId),
+            CONSTRAINT FK_UserCareer_Users FOREIGN KEY (UserId) REFERENCES dbo.Users(Id),
+            CONSTRAINT FK_UserCareer_Careers FOREIGN KEY (CareerId) REFERENCES dbo.Careers(Id)
+        );
+    END
+    ELSE
+    BEGIN
+        -- Verificar que las columnas principales existan
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.UserCareer') AND name = 'UserId')
+        BEGIN
+            ALTER TABLE dbo.UserCareer ADD UserId INT NOT NULL DEFAULT 0;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.UserCareer') AND name = 'CareerId')
+        BEGIN
+            ALTER TABLE dbo.UserCareer ADD CareerId INT NOT NULL DEFAULT 0;
+        END
+
+        -- Verificar PK
+        IF NOT EXISTS (
+            SELECT 1 FROM sys.key_constraints 
+            WHERE parent_object_id = OBJECT_ID(N'dbo.UserCareer') 
+              AND type = 'PK' 
+              AND name = 'PK_UserCareer'
+        )
+        BEGIN
+            ALTER TABLE dbo.UserCareer ADD CONSTRAINT PK_UserCareer PRIMARY KEY (UserId, CareerId);
+        END
+
+        -- Verificar FK a Users
+        IF NOT EXISTS (
+            SELECT 1 FROM sys.foreign_keys 
+            WHERE parent_object_id = OBJECT_ID(N'dbo.UserCareer') 
+              AND name = 'FK_UserCareer_Users'
+        )
+        BEGIN
+            ALTER TABLE dbo.UserCareer 
+            ADD CONSTRAINT FK_UserCareer_Users FOREIGN KEY (UserId) REFERENCES dbo.Users(Id);
+        END
+
+        -- Verificar FK a Careers
+        IF NOT EXISTS (
+            SELECT 1 FROM sys.foreign_keys 
+            WHERE parent_object_id = OBJECT_ID(N'dbo.UserCareer') 
+              AND name = 'FK_UserCareer_Careers'
+        )
+        BEGIN
+            ALTER TABLE dbo.UserCareer 
+            ADD CONSTRAINT FK_UserCareer_Careers FOREIGN KEY (CareerId) REFERENCES dbo.Careers(Id);
+        END
+    END";
+
+            _logger.LogInformation("Ensuring UserCareer table exists.");
+            await ExecuteAsync(_factory.CreateApp(), sql, ct);
+        }
+
 
         private async Task CreateValidateUserProcIfNotExistsAsync(CancellationToken ct)
         {

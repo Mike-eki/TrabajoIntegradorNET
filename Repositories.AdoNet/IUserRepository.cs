@@ -13,5 +13,11 @@ namespace ADO.NET
         Task<List<User>> GetAllAsync(CancellationToken ct = default);
         Task<User?> GetByIdAsync(int userId, CancellationToken ct = default);
         Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default);
+
+        Task<List<User>> GetStudentsBySubjectIdAsync(int subjectId, CancellationToken ct = default);
+        Task<List<int>> GetCareerIdsByUserIdAsync(int userId, CancellationToken ct = default);
+        Task UpdateUserCareersAsync(int userId, List<int> careerIds, CancellationToken ct = default);
+
+
     }
 }

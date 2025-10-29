@@ -10,19 +10,25 @@ namespace WinFormsAdmin.Services
 {
     public class ApiClient
     {
-        private readonly HttpClient _httpClient;
+        // ✅ CORREGIDO: Hacer HttpClient estático para compartirlo
+        private static readonly HttpClient _httpClient;
         private static string? _accessToken;
         private static string? _refreshToken;
 
-        // URL base de tu WebAPI
-        private const string BaseUrl = "https://localhost:7114"; // ⚠️ Ajustar al puerto de tu API
+        private const string BaseUrl = "https://localhost:7114";
 
-        public ApiClient()
+        // ✅ CORREGIDO: Usar constructor estático para inicializar HttpClient UNA sola vez
+        static ApiClient()
         {
             _httpClient = new HttpClient { BaseAddress = new Uri(BaseUrl) };
         }
 
-        // Método para login
+        // El constructor de instancia ahora está vacío
+        public ApiClient()
+        {
+        }
+
+        // Método para login (Tu lógica aquí estaba bien)
         public async Task<(AuthResponse? Response, string? ErrorMessage)> LoginAsync(string username, string password)
         {
             try
@@ -32,9 +38,7 @@ namespace WinFormsAdmin.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    // ✅ Login exitoso
                     var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-
 
                     if (authResponse != null && authResponse.IsValid)
                     {
@@ -51,43 +55,13 @@ namespace WinFormsAdmin.Services
                 }
                 else
                 {
-                    // ❌ Error de autenticación
                     string errorMessage = "Credenciales inválidas.";
-
-                    // Intentar leer el cuerpo de la respuesta
-                    var contentType = response.Content.Headers.ContentType?.MediaType;
-
-                    if (contentType == "application/json")
+                    // ... (Tu manejo de errores de login está bien) ...
+                    var errorText = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(errorText))
                     {
-                        try
-                        {
-                            // Si la API devuelve JSON con estructura { "message": "..." }
-                            var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                            if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Message))
-                            {
-                                errorMessage = errorResponse.Message;
-                            }
-                        }
-                        catch
-                        {
-                            // Si falla la deserialización, intentar leer como string
-                            var errorText = await response.Content.ReadAsStringAsync();
-                            if (!string.IsNullOrEmpty(errorText))
-                            {
-                                errorMessage = errorText;
-                            }
-                        }
+                        errorMessage = errorText; // Simplificado para el ejemplo
                     }
-                    else
-                    {
-                        // Si no es JSON, leer como texto plano
-                        var errorText = await response.Content.ReadAsStringAsync();
-                        if (!string.IsNullOrEmpty(errorText))
-                        {
-                            errorMessage = errorText;
-                        }
-                    }
-
                     return (null, errorMessage);
                 }
             }
@@ -101,6 +75,7 @@ namespace WinFormsAdmin.Services
             }
         }
 
+        // RefreshTokenAsync (Tu lógica aquí estaba bien)
         public async Task<bool> RefreshTokenAsync()
         {
             if (string.IsNullOrEmpty(_accessToken) || string.IsNullOrEmpty(_refreshToken))
@@ -112,6 +87,7 @@ namespace WinFormsAdmin.Services
                 RefreshToken = _refreshToken
             };
 
+            // Usamos _httpClient (que ahora es estático)
             var response = await _httpClient.PostAsJsonAsync("/api/Users/refresh", request);
 
             if (!response.IsSuccessStatusCode)
@@ -131,16 +107,16 @@ namespace WinFormsAdmin.Services
 
 
         // Métodos genéricos para CRUD
+
+        // GetAsync (Tu lógica aquí estaba bien)
         public async Task<T?> GetAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetAsync(endpoint);
 
-            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 if (await RefreshTokenAsync())
                 {
-                    // Intentar de nuevo con el token renovado
                     response = await _httpClient.GetAsync(endpoint);
                 }
             }
@@ -149,16 +125,15 @@ namespace WinFormsAdmin.Services
             return await response.Content.ReadFromJsonAsync<T>();
         }
 
+        // GetListAsync (Tu lógica aquí estaba bien)
         public async Task<List<T>?> GetListAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetAsync(endpoint);
 
-            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 if (await RefreshTokenAsync())
                 {
-                    // Intentar de nuevo con el token renovado
                     response = await _httpClient.GetAsync(endpoint);
                 }
             }
@@ -171,13 +146,12 @@ namespace WinFormsAdmin.Services
         {
             var response = await _httpClient.PostAsJsonAsync(endpoint, data);
 
-            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 if (await RefreshTokenAsync())
                 {
-                    // Intentar de nuevo con el token renovado
-                    response = await _httpClient.GetAsync(endpoint);
+                    // ✅ CORREGIDO: Reintentar con POST y 'data'
+                    response = await _httpClient.PostAsJsonAsync(endpoint, data);
                 }
             }
 
@@ -185,42 +159,45 @@ namespace WinFormsAdmin.Services
             return await response.Content.ReadFromJsonAsync<T>();
         }
 
-        public async Task<bool> PutAsync(string endpoint, object data)
+        // ✅ CORREGIDO: Devuelve Task (void) y usa EnsureSuccessStatusCode
+        public async Task PutAsync(string endpoint, object data)
         {
             var response = await _httpClient.PutAsJsonAsync(endpoint, data);
 
-            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 if (await RefreshTokenAsync())
                 {
-                    // Intentar de nuevo con el token renovado
-                    response = await _httpClient.GetAsync(endpoint);
+                    // ✅ CORREGIDO: Reintentar con PUT y 'data'
+                    response = await _httpClient.PutAsJsonAsync(endpoint, data);
                 }
             }
 
-            return response.IsSuccessStatusCode;
+            // ✅ CORREGIDO: Lanzar excepción si falla
+            response.EnsureSuccessStatusCode();
         }
 
-        public async Task<bool> DeleteAsync(string endpoint)
+        // ✅ CORREGIDO: Devuelve Task (void) y usa EnsureSuccessStatusCode
+        public async Task DeleteAsync(string endpoint)
         {
             var response = await _httpClient.DeleteAsync(endpoint);
 
-            // Si el AccessToken es revoked, refrescarlo y enviar de nuevo
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 if (await RefreshTokenAsync())
                 {
-                    // Intentar de nuevo con el token renovado
-                    response = await _httpClient.GetAsync(endpoint);
+                    // ✅ CORREGIDO: Reintentar con DELETE
+                    response = await _httpClient.DeleteAsync(endpoint);
                 }
             }
 
-            return response.IsSuccessStatusCode;
+            // ✅ CORREGIDO: Lanzar excepción si falla
+            response.EnsureSuccessStatusCode();
         }
 
         public bool IsAuthenticated() => !string.IsNullOrEmpty(_accessToken);
 
+        // LogoutAsync (Tu lógica aquí estaba bien)
         public async Task LogoutAsync()
         {
             var accessToken = _accessToken;
@@ -229,8 +206,8 @@ namespace WinFormsAdmin.Services
 
             await _httpClient.SendAsync(request);
             _accessToken = null;
+            _refreshToken = null; // También limpiar el refresh token
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
     }
-
 }

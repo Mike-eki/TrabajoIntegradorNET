@@ -28,12 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            CheckedListBox clbSubjects;
+            //CheckedListBox clbSubjects;
             lblCareerName = new Label();
             groupBox1 = new GroupBox();
             btnSave = new Button();
             btnCancel = new Button();
-            clbSubjects = new CheckedListBox();
+            this.clbSubjects = new CheckedListBox();
             groupBox1.SuspendLayout();
             SuspendLayout();
             // 

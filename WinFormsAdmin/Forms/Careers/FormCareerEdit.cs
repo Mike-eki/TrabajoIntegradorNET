@@ -71,19 +71,21 @@ namespace WinFormsAdmin.Forms.Careers
                 if (_careerId.HasValue)
                 {
                     // Actualizar
-                    bool success = await _apiClient.PutAsync($"/api/Careers/{_careerId}", careerDto);
-                    if (success)
+                    try
                     {
+                        await _apiClient.PutAsync($"/api/Careers/{_careerId}", careerDto);
+                    
                         MessageBox.Show("Carrera actualizada correctamente.", "Éxito",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
                         this.DialogResult = DialogResult.OK;
                         this.Close();
                     }
-                    else
+                    catch
                     {
                         MessageBox.Show("Error al actualizar la carrera.", "Error",
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
+
                 }
                 else
                 {

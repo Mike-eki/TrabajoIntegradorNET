@@ -182,7 +182,7 @@ namespace EntityFramework.Migrations
                     b.HasOne("Models.Entities.Commission", "Commission")
                         .WithMany("Enrollments")
                         .HasForeignKey("CommissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Commission");

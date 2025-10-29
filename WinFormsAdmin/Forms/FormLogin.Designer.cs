@@ -38,23 +38,23 @@
             // 
             // txtUsername
             // 
-            txtUsername.Location = new Point(326, 104);
+            txtUsername.Location = new Point(264, 126);
             txtUsername.Name = "txtUsername";
-            txtUsername.Size = new Size(100, 23);
+            txtUsername.Size = new Size(245, 23);
             txtUsername.TabIndex = 0;
             // 
             // txtPassword
             // 
-            txtPassword.Location = new Point(326, 151);
+            txtPassword.Location = new Point(264, 183);
             txtPassword.Name = "txtPassword";
             txtPassword.PasswordChar = '*';
-            txtPassword.Size = new Size(100, 23);
+            txtPassword.Size = new Size(245, 23);
             txtPassword.TabIndex = 1;
             txtPassword.UseSystemPasswordChar = true;
             // 
             // btnLogin
             // 
-            btnLogin.Location = new Point(326, 206);
+            btnLogin.Location = new Point(327, 231);
             btnLogin.Name = "btnLogin";
             btnLogin.Size = new Size(100, 23);
             btnLogin.TabIndex = 2;
@@ -65,7 +65,7 @@
             // lblError
             // 
             lblError.AutoSize = true;
-            lblError.Location = new Point(326, 244);
+            lblError.Location = new Point(327, 269);
             lblError.Name = "lblError";
             lblError.Size = new Size(103, 15);
             lblError.TabIndex = 3;
@@ -76,7 +76,7 @@
             // lblUsername
             // 
             lblUsername.AutoSize = true;
-            lblUsername.Location = new Point(326, 86);
+            lblUsername.Location = new Point(264, 108);
             lblUsername.Name = "lblUsername";
             lblUsername.Size = new Size(47, 15);
             lblUsername.TabIndex = 4;
@@ -85,7 +85,7 @@
             // lblPassword
             // 
             lblPassword.AutoSize = true;
-            lblPassword.Location = new Point(326, 133);
+            lblPassword.Location = new Point(264, 165);
             lblPassword.Name = "lblPassword";
             lblPassword.Size = new Size(67, 15);
             lblPassword.TabIndex = 5;
@@ -103,7 +103,8 @@
             Controls.Add(txtPassword);
             Controls.Add(txtUsername);
             Name = "FormLogin";
-            Text = "FormLogin";
+            Text = "Inicía Sesión";
+            WindowState = FormWindowState.Maximized;
             Load += FormLogin_Load;
             ResumeLayout(false);
             PerformLayout();

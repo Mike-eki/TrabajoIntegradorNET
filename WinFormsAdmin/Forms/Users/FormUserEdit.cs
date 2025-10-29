@@ -39,6 +39,80 @@ namespace WinFormsAdmin.Forms.Users
             LoadUserData();
         }
 
+        private async void FormUserEdit_Load(object sender, EventArgs e)
+        {
+            var careers = await _apiClient.GetListAsync<CareerResponseDto>("/api/Careers");
+            clbCareers.Items.Clear();
+
+            foreach (var c in careers)
+                clbCareers.Items.Add(c);
+
+            clbCareers.DisplayMember = "Name";
+
+            // Si estamos editando un usuario existente
+            if (!_isNew && _userId.HasValue)
+            {
+                var user = await _apiClient.GetAsync<UserResponseDto>($"/api/Users/{_userId}");
+
+                // Verificar si es Student
+                bool isStudent = user.Role.Equals("Student", StringComparison.OrdinalIgnoreCase);
+
+                // Deshabilitar si no lo es
+                clbCareers.Enabled = isStudent;
+                gbCareers.Text = isStudent ? "Carreras:" : "Carreras (solo aplicable a estudiantes)";
+                gbCareers.ForeColor = isStudent ? Color.Black : Color.Gray;
+
+                // Si es estudiante, marcar sus carreras actuales
+                if (isStudent)
+                {
+                    var userCareers = await _apiClient.GetListAsync<CareerResponseDto>($"/api/Users/{_userId}/careers");
+
+                    clbCareers.BeginUpdate();
+                    for (int i = 0; i < clbCareers.Items.Count; i++)
+                    {
+                        var career = (CareerResponseDto)clbCareers.Items[i];
+                        clbCareers.SetItemChecked(i, userCareers.Any(c => c.Id == career.Id));
+                    }
+                    clbCareers.EndUpdate();
+                }
+
+                // Suscribirse a cambios de rol si se edita el rol manualmente
+                cmbRole.SelectedIndexChanged += (s, ev) => ToggleCareersControl(cmbRole.SelectedItem?.ToString());
+            }
+            else
+            {
+                // En modo creación: configurar comportamiento inicial
+                bool isStudent = cmbRole.SelectedItem?.ToString() == "Student";
+                clbCareers.Enabled = isStudent;
+                gbCareers.Text = isStudent ? "Carreras:" : "Carreras (solo aplicable a estudiantes)";
+                gbCareers.ForeColor = isStudent ? Color.Black : Color.Gray;
+
+                // Escuchar cambios del rol en tiempo real
+                cmbRole.SelectedIndexChanged += (s, ev) => ToggleCareersControl(cmbRole.SelectedItem?.ToString());
+            }
+        }
+
+        private void ToggleCareersControl(string? selectedRole)
+        {
+            bool isStudent = selectedRole?.Equals("Student", StringComparison.OrdinalIgnoreCase) ?? false;
+
+            // Cambiar estado del control
+            clbCareers.Enabled = isStudent;
+            gbCareers.Text = isStudent ? "Carreras:" : "Carreras (solo aplicable a estudiantes)";
+            gbCareers.ForeColor = isStudent ? Color.Black : Color.Gray;
+
+            // Si NO es estudiante, limpiar selecciones
+            if (!isStudent)
+            {
+                clbCareers.BeginUpdate();
+                for (int i = 0; i < clbCareers.Items.Count; i++)
+                    clbCareers.SetItemChecked(i, false);
+                clbCareers.EndUpdate();
+            }
+        }
+
+
+
         private async void LoadUserData()
         {
             try
@@ -173,6 +247,10 @@ namespace WinFormsAdmin.Forms.Users
                 };
 
                 await _apiClient.PutAsync($"api/Users/{_userId}", updatedUser);
+                var selectedIds = clbCareers.CheckedItems.Cast<CareerResponseDto>().Select(c => c.Id).ToList();
+                //await _apiClient.PutAsync<object>($"/api/Users/{_userId}/careers", selectedIds);
+                await _apiClient.PutAsync($"/api/Users/{_userId}/careers", selectedIds);
+
                 MessageBox.Show("Usuario actualizado correctamente.", "Éxito",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 DialogResult = DialogResult.OK;

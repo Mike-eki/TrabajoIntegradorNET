@@ -163,5 +163,99 @@ namespace ADO.NET
 
             return users;
         }
+
+        public async Task<List<User>> GetStudentsBySubjectIdAsync(int subjectId, CancellationToken ct = default)
+        {
+            var students = new List<User>();
+
+            // 🔹 El JOIN conecta Users → UserCareer → CareerSubject → Subjects
+            const string sql = @"
+        SELECT DISTINCT u.Id, u.Username, u.Legajo, u.Email, u.Fullname, u.Role
+        FROM dbo.Users u
+        INNER JOIN dbo.UserCareer uc ON u.Id = uc.UserId
+        INNER JOIN dbo.CareerSubject cs ON uc.CareerId = cs.CareerId
+        INNER JOIN dbo.Subjects s ON cs.SubjectId = s.Id
+        WHERE s.Id = @SubjectId
+          AND u.Role = 'Student';";
+
+            await using var conn = _factory.CreateApp();
+            await using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@SubjectId", subjectId);
+
+            await conn.OpenAsync(ct);
+            await using var rdr = await cmd.ExecuteReaderAsync(ct);
+
+            while (await rdr.ReadAsync(ct))
+            {
+                var user = new User
+                {
+                    Id = rdr.GetInt32(0),
+                    Username = rdr.GetString(1),
+                    Legajo = rdr.GetString(2),
+                    Email = rdr.GetString(3),
+                    Fullname = rdr.GetString(4),
+                    Role = UserRoleConverter.FromString(rdr.GetString(5))
+                };
+                students.Add(user);
+            }
+
+            return students;
+        }
+
+        public async Task<List<int>> GetCareerIdsByUserIdAsync(int userId, CancellationToken ct = default)
+        {
+            const string sql = @"SELECT CareerId FROM dbo.UserCareer WHERE UserId = @UserId;";
+            var careerIds = new List<int>();
+
+            await using var conn = _factory.CreateApp();
+            await using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+
+            await conn.OpenAsync(ct);
+            await using var rdr = await cmd.ExecuteReaderAsync(ct);
+
+            while (await rdr.ReadAsync(ct))
+                careerIds.Add(rdr.GetInt32(0));
+
+            return careerIds;
+        }
+
+        public async Task UpdateUserCareersAsync(int userId, List<int> careerIds, CancellationToken ct = default)
+        {
+            await using var conn = _factory.CreateApp();
+            await conn.OpenAsync(ct);
+
+            await using var tx = await conn.BeginTransactionAsync(ct);
+
+            try
+            {
+                // Eliminar asociaciones anteriores
+                const string deleteSql = @"DELETE FROM dbo.UserCareer WHERE UserId = @UserId;";
+                await using (var delCmd = new SqlCommand(deleteSql, conn, (SqlTransaction)tx))
+                {
+                    delCmd.Parameters.AddWithValue("@UserId", userId);
+                    await delCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // Insertar nuevas asociaciones
+                const string insertSql = @"INSERT INTO dbo.UserCareer (UserId, CareerId) VALUES (@UserId, @CareerId);";
+                foreach (var id in careerIds)
+                {
+                    await using var insCmd = new SqlCommand(insertSql, conn, (SqlTransaction)tx);
+                    insCmd.Parameters.AddWithValue("@UserId", userId);
+                    insCmd.Parameters.AddWithValue("@CareerId", id);
+                    await insCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                await tx.CommitAsync(ct);
+            }
+            catch
+            {
+                await tx.RollbackAsync(ct);
+                throw;
+            }
+        }
+
+
     }
 }

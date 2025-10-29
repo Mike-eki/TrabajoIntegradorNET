@@ -73,19 +73,22 @@ namespace WinFormsAdmin.Forms.Subjects
                 if (_subjectId.HasValue)
                 {
                     // Actualizar
-                    bool success = await _apiClient.PutAsync($"/api/Subjects/{_subjectId}", subjectDto);
-                    if (success)
+                    try
                     {
+                        await _apiClient.PutAsync($"/api/Subjects/{_subjectId}", subjectDto);
+
                         MessageBox.Show("Materia actualizada correctamente.", "Éxito",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
                         this.DialogResult = DialogResult.OK;
                         this.Close();
                     }
-                    else
+                    catch
                     {
                         MessageBox.Show("Error al actualizar la Materia.", "Error",
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
+
+
                 }
                 else
                 {

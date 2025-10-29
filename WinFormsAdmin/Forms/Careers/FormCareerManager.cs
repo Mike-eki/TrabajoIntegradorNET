@@ -166,12 +166,11 @@ namespace WinFormsAdmin.Forms.Careers
             {
                 try
                 {
-                    bool success = await _apiClient.DeleteAsync($"/api/Careers/{career.Id}");
-                    if (success)
-                    {
-                        MessageBox.Show("Carrera eliminada correctamente.");
-                        LoadCareers();
-                    }
+                    await _apiClient.DeleteAsync($"/api/Careers/{career.Id}");
+
+                    MessageBox.Show("Carrera eliminada correctamente.");
+                    LoadCareers();
+
                 }
                 catch (Exception ex)
                 {

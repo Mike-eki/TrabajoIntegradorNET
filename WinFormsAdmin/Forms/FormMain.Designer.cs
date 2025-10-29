@@ -60,33 +60,34 @@
             // carrerasToolStripMenuItem
             // 
             carrerasToolStripMenuItem.Name = "carrerasToolStripMenuItem";
-            carrerasToolStripMenuItem.Size = new Size(180, 22);
+            carrerasToolStripMenuItem.Size = new Size(143, 22);
             carrerasToolStripMenuItem.Text = "Carreras";
             carrerasToolStripMenuItem.Click += menuCarreras_Click;
             // 
             // materiasToolStripMenuItem
             // 
             materiasToolStripMenuItem.Name = "materiasToolStripMenuItem";
-            materiasToolStripMenuItem.Size = new Size(180, 22);
+            materiasToolStripMenuItem.Size = new Size(143, 22);
             materiasToolStripMenuItem.Text = "Materias";
             materiasToolStripMenuItem.Click += menuMaterias_Click;
             // 
             // comisionesToolStripMenuItem
             // 
             comisionesToolStripMenuItem.Name = "comisionesToolStripMenuItem";
-            comisionesToolStripMenuItem.Size = new Size(180, 22);
+            comisionesToolStripMenuItem.Size = new Size(143, 22);
             comisionesToolStripMenuItem.Text = "Comisiones";
+            comisionesToolStripMenuItem.Click += menuComisiones_Click;
             // 
             // inscripcionesToolStripMenuItem
             // 
             inscripcionesToolStripMenuItem.Name = "inscripcionesToolStripMenuItem";
-            inscripcionesToolStripMenuItem.Size = new Size(180, 22);
+            inscripcionesToolStripMenuItem.Size = new Size(143, 22);
             inscripcionesToolStripMenuItem.Text = "Inscripciones";
             // 
             // usuariosToolStripMenuItem
             // 
             usuariosToolStripMenuItem.Name = "usuariosToolStripMenuItem";
-            usuariosToolStripMenuItem.Size = new Size(180, 22);
+            usuariosToolStripMenuItem.Size = new Size(143, 22);
             usuariosToolStripMenuItem.Text = "Usuarios";
             usuariosToolStripMenuItem.Click += menuUsuarios_Click;
             // 
@@ -112,14 +113,13 @@
             // 
             // FormMain
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(800, 450);
             Controls.Add(menuStrip1);
             IsMdiContainer = true;
             MainMenuStrip = menuStrip1;
             Name = "FormMain";
-            Text = "FormMain";
+            Text = "Sistema Academico";
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ResumeLayout(false);

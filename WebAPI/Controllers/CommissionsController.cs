@@ -1,83 +1,60 @@
 ﻿using EntityFramework.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Models.Entities;
 using Models.DTOs;
+using Models.Entities;
+using OpenTelemetry.Trace;
+using Services;
+using Services.Interfaces;
 
 namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Professor")] // Solo Admin y Profesores
+    [Authorize]
     public class CommissionsController : ControllerBase
     {
         private readonly ICommissionRepository _repo;
+        private readonly ICommissionService _commissionService;
+        private readonly ILogger<CommissionsController> _logger;
 
-        public CommissionsController(ICommissionRepository repo)
+        public CommissionsController(ICommissionRepository repo, ILogger<CommissionsController> logger, ICommissionService commissionService)
         {
             _repo = repo;
+            _logger = logger;
+            _commissionService = commissionService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAllCommissionsWithProfessors(CancellationToken ct)
         {
-            var commissions = await _repo.GetAllAsync();
-
-            var response = commissions.Select(c => new CommissionResponseDto
+            try
             {
-                Id = c.Id,
-                SubjectId = c.SubjectId,
-                SubjectName = c.Subject.Name,
-                ProfessorId = c.ProfessorId,
-                CycleYear = c.CycleYear,
-                DayOfWeek = c.DayOfWeek,
-                StartTime = c.StartTime,
-                EndTime = c.EndTime,
-                Capacity = c.Capacity,
-                Status = c.Status,
-                Enrollments = c.Enrollments.Select(e => new EnrollmentSimpleDto
-                {
-                    Id = e.Id,
-                    StudentId = e.StudentId,
-                    Status = e.Status
-                })
-            });
-
-            return Ok(response);
+                var commissions = await _repo.GetAllCommissionsWithProfessorsAsync(ct);
+                return Ok(commissions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener las comisiones.");
+                return StatusCode(500, new { Message = "Error interno al obtener las comisiones.", Error = ex.Message });
+            }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
-            var commission = await _repo.GetByIdAsync(id);
-            if (commission == null)
-                return NotFound();
+            var dto = await _commissionService.GetByIdAsync(id, ct);
+            if (dto == null)
+                return NotFound(new { message = "Comisión no encontrada." });
 
-            var response = new CommissionResponseDto
-            {
-                Id = commission.Id,
-                SubjectId = commission.SubjectId,
-                SubjectName = commission.Subject.Name,
-                ProfessorId = commission.ProfessorId,
-                CycleYear = commission.CycleYear,
-                DayOfWeek = commission.DayOfWeek,
-                StartTime = commission.StartTime,
-                EndTime = commission.EndTime,
-                Capacity = commission.Capacity,
-                Status = commission.Status,
-                Enrollments = commission.Enrollments.Select(e => new EnrollmentSimpleDto
-                {
-                    Id = e.Id,
-                    StudentId = e.StudentId,
-                    Status = e.Status
-                })
-            };
-
-            return Ok(response);
+            return Ok(dto);
         }
 
+
+        [Authorize(Roles = "Admin,Professor")]
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CommissionCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] CommissionCreateDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -91,22 +68,27 @@ namespace WebAPI.Controllers
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 Capacity = dto.Capacity,
-                Status = dto.Status
+                Status = dto.ProfessorId.HasValue ? dto.Status : "Pendiente"
             };
 
             try
             {
-                await _repo.AddAsync(commission);
-                return CreatedAtAction(nameof(GetById), new { id = commission.Id }, commission);
+                // Validar horario
+                ScheduleHelper.ValidateSchedule(dto.StartTime.Hours, dto.StartTime.Minutes);
+                ScheduleHelper.ValidateSchedule(dto.EndTime.Hours, dto.EndTime.Minutes);
+
+                await _repo.AddAsync(commission, ct);
+                return Ok(new { Success = true, Message = "Commission added successfully." });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { error = ex.Message });
+                return BadRequest(new { Success = false, Message = ex.Message });
             }
         }
 
+        [Authorize(Roles = "Admin,Professor")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] CommissionCreateDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] CommissionUpdateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -122,17 +104,40 @@ namespace WebAPI.Controllers
             existing.StartTime = dto.StartTime;
             existing.EndTime = dto.EndTime;
             existing.Capacity = dto.Capacity;
-            existing.Status = dto.Status;
+            existing.Status = CommissionHelper.ResolveStatus(dto.ProfessorId, dto.Status);
 
             await _repo.UpdateAsync(existing);
-            return NoContent();
+            return Ok(new {Succes = true, Message = "Succefully commission edited"});
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}/assign-professor")]
+        public async Task<IActionResult> AssignProfessor(int id, [FromBody] AssignProfessorDto dto, CancellationToken ct)
+        {
+            try
+            {
+                await _repo.AssignProfessorAsync(id, dto.ProfessorId, ct);
+                return Ok(new { Message = "Profesor asignado/desasignado correctamente." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al asignar profesor a la comisión {CommissionId}", id);
+                return StatusCode(500, new { Message = "Error interno al asignar profesor." });
+            }
+        }
+
+
+        [Authorize(Roles = "Admin,Professor")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             await _repo.DeleteAsync(id);
             return NoContent();
         }
+
     }
 }

@@ -30,8 +30,8 @@ namespace WinFormsAdmin.Forms.Careers
         protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            clbSubjects.DisplayMember = "Name";
             await LoadSubjectsAsync();
+            
         }
 
         private async Task LoadSubjectsAsync()
@@ -63,6 +63,7 @@ namespace WinFormsAdmin.Forms.Careers
                     MessageBox.Show("No hay materias disponibles.\nCree materias primero desde 'Gestión > Materias'.",
                         "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+                clbSubjects.DisplayMember = "Name";
 
                 clbSubjects.EndUpdate();
             }

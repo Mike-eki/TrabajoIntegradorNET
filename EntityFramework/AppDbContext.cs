@@ -40,7 +40,7 @@ namespace EntityFramework
                 .HasOne(e => e.Commission)
                 .WithMany(c => c.Enrollments)
                 .HasForeignKey(e => e.CommissionId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

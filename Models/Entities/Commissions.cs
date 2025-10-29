@@ -39,7 +39,7 @@ namespace Models.Entities
 
         [Required]
         [MaxLength(20)]
-        public string Status { get; set; } = "INACTIVE"; // Ej: INACTIVE, ACTIVE, FINALIZED
+        public string Status { get; set; } = string.Empty;
 
         // Navegación inversa: una comisión puede tener muchas inscripciones
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();

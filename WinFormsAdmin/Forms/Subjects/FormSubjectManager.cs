@@ -167,12 +167,11 @@ namespace WinFormsAdmin.Forms.Subjects
             {
                 try
                 {
-                    bool success = await _apiClient.DeleteAsync($"/api/Subjects/{subject.Id}");
-                    if (success)
-                    {
+                    await _apiClient.DeleteAsync($"/api/Subjects/{subject.Id}");
+
                         MessageBox.Show("Materia eliminada correctamente.");
                         LoadSubjects();
-                    }
+
                 }
                 catch (Exception ex)
                 {

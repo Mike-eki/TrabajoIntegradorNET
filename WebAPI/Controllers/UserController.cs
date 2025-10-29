@@ -1,9 +1,11 @@
 ﻿using ADO.NET;
+using EntityFramework.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Models.Entities;
 using Models.DTOs;
+using Models.Entities;
+using Models.Enums;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,14 +16,16 @@ namespace MyApp.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly ICareerRepository _careerRepo;
         private readonly IUserRepository _repo;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(UserService userService, IUserRepository repo, ILogger<UsersController> logger)
+        public UsersController(UserService userService, IUserRepository repo, ILogger<UsersController> logger, ICareerRepository careerRepo)
         {
             _userService = userService;
             _repo = repo;
             _logger = logger;
+            _careerRepo = careerRepo;
         }
 
         [HttpPost("validate")]
@@ -55,6 +59,11 @@ namespace MyApp.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] UserCreateDto request, CancellationToken ct = default)
         {
+            if (await _repo.ExistsAsync(request.Username, ct))
+            {
+                return Conflict(new { message = "Username already exists." });
+            }
+
             _logger.LogInformation("Creating user {Username} with role {Role}.", request.Username, request.Role);
             var role = UserRoleConverter.FromString(request.Role);
             var (hash, salt) = PasswordHasher.ComputeHash(request.Password);
@@ -70,7 +79,21 @@ namespace MyApp.Controllers
                 Salt = salt,
                 Role = role
             };
+            
+
+
             await _repo.CreateAsync(user, ct);
+
+            // ✅ Solo asociar carreras si el rol es Student
+            if (user.Role == UserRole.Student && request.CareerIds != null && request.CareerIds.Any())
+            {
+                await _repo.UpdateUserCareersAsync(user.Id, request.CareerIds, ct);
+                _logger.LogInformation("Associated {Count} career(s) to student {Username}.", request.CareerIds.Count, request.Username);
+            }
+            else if (request.CareerIds != null && request.CareerIds.Any())
+            {
+                _logger.LogInformation("User {Username} is not a Student — ignoring {Count} career(s).", request.Username, request.CareerIds.Count);
+            }
 
 
             _logger.LogInformation("User {Username} created with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
@@ -102,34 +125,89 @@ namespace MyApp.Controllers
             return Ok(response);
         }
 
+        //[Authorize(Roles = "Admin")]
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllUsers(string? role = null,  CancellationToken ct = default)
+        //{
+        //    _logger.LogInformation("Retrieving users with role: {Role}", role ?? "All");
+
+        //    var users = await _repo.GetAllAsync(ct);
+
+        //    if (users == null || users.Count == 0)
+        //    {
+        //        _logger.LogWarning("No users found in the system.");
+        //        return Ok(new List<UserResponseDto>()); // devuelve lista vacía (no error)
+        //    }
+
+        //    // Filtrar por rol si se proporciona el parámetro
+        //    if (!string.IsNullOrEmpty(role))
+        //    {
+        //        UserRoleConverter.FromString(role); // Validar rol
+        //        users = users.Where(u => u.Role.ToString().Equals(role, StringComparison.OrdinalIgnoreCase)).ToList();
+        //    }
+
+        //    var dtoList = users.Select(u => new UserResponseDto
+        //    {
+        //        Id = u.Id,
+        //        Username = u.Username,
+        //        Legajo = u.Legajo,
+        //        Email = u.Email,
+        //        FullName = u.Fullname,
+        //        Role = u.Role.ToString()
+        //    }).ToList();
+
+        //    _logger.LogInformation("Retrieved {Count} users successfully.", dtoList.Count);
+
+        //    return Ok(dtoList);
+        //}
+
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers(CancellationToken ct = default)
+        public async Task<IActionResult> GetAllUsers(string? role = null, int? subjectId = null, CancellationToken ct = default)
         {
-            _logger.LogInformation("Retrieving all users.");
-
-            var users = await _repo.GetAllAsync(ct);
-
-            if (users == null || users.Count == 0)
+            try
             {
-                _logger.LogWarning("No users found in the system.");
-                return Ok(new List<UserResponseDto>()); // devuelve lista vacía (no error)
+                _logger.LogInformation("Retrieving users. Role: {Role}, SubjectId: {SubjectId}", role ?? "All", subjectId);
+
+                List<User> users;
+
+                // 🔹 Si tiene subjectId y rol Student → usar el nuevo método optimizado
+                if (subjectId.HasValue && role?.Equals("Student", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    users = await _repo.GetStudentsBySubjectIdAsync(subjectId.Value, ct);
+                }
+                else
+                {
+                    users = await _repo.GetAllAsync(ct);
+
+                    if (!string.IsNullOrEmpty(role))
+                    {
+                        UserRoleConverter.FromString(role);
+                        users = users
+                            .Where(u => u.Role.ToString().Equals(role, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                    }
+                }
+
+                var dtoList = users.Select(u => new UserResponseDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Legajo = u.Legajo,
+                    Email = u.Email,
+                    FullName = u.Fullname,
+                    Role = u.Role.ToString()
+                }).ToList();
+
+                return Ok(dtoList);
             }
-
-            var dtoList = users.Select(u => new UserResponseDto
+            catch (Exception ex)
             {
-                Id = u.Id,
-                Username = u.Username,
-                Legajo = u.Legajo,
-                Email = u.Email,
-                FullName = u.Fullname,
-                Role = u.Role.ToString()
-            }).ToList();
-
-            _logger.LogInformation("Retrieved {Count} users successfully.", dtoList.Count);
-
-            return Ok(dtoList);
+                _logger.LogError(ex, "Error retrieving users");
+                return StatusCode(500, new { message = "Error interno al obtener usuarios.", detail = ex.Message });
+            }
         }
+
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
@@ -147,6 +225,28 @@ namespace MyApp.Controllers
             user.Role = role;
             user.Email = request.Email;
             user.Fullname = request.FullName;
+
+            //// ✅ Lógica de carreras según el rol
+            //if (user.Role == UserRole.Student)
+            //{
+            //    if (request.CareerIds != null && request.CareerIds.Any())
+            //    {
+            //        await _repo.UpdateUserCareersAsync(user.Id, request.CareerIds, ct);
+            //        _logger.LogInformation("Updated {Count} career(s) for student {UserId}.", request.CareerIds.Count, id);
+            //    }
+            //    else
+            //    {
+            //        // Si no envía ninguna carrera, se asume que las quiere limpiar
+            //        await _repo.UpdateUserCareersAsync(user.Id, new List<int>(), ct);
+            //        _logger.LogInformation("Removed all career associations for student {UserId}.", id);
+            //    }
+            //}
+            //else
+            //{
+            //    // Si el usuario ya no es estudiante, limpiar asociaciones previas
+            //    _logger.LogInformation("User {UserId} is not a Student. Removing all career associations.", id);
+            //    await _repo.UpdateUserCareersAsync(user.Id, new List<int>(), ct);
+            //}
 
             await _repo.UpdateAsync(user);
 
@@ -220,6 +320,61 @@ namespace MyApp.Controllers
             return Ok(new { Message = "Passworded reset succesfully" });
 
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{userId}/careers")]
+        public async Task<IActionResult> GetUserCareers(int userId, CancellationToken ct = default)
+        {
+            _logger.LogInformation("Retrieving careers for user {UserId}", userId);
+
+            var careerIds = await _repo.GetCareerIdsByUserIdAsync(userId, ct);
+
+            if (careerIds == null || careerIds.Count == 0)
+            {
+                _logger.LogWarning("No careers found for user {UserId}", userId);
+                return Ok(new List<object>()); // vacío
+            }
+
+            var careers = await _careerRepo.GetAllAsync(); // EF
+            var userCareers = careers
+                .Where(c => careerIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.Name })
+                .ToList();
+
+            return Ok(userCareers);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{userId}/careers")]
+        public async Task<IActionResult> UpdateUserCareers(int userId, [FromBody] List<int> careerIds, CancellationToken ct = default)
+        {
+            _logger.LogInformation("Updating careers for user {UserId}", userId);
+
+            // Obtener usuario actual desde ADO.NET (sin exponer la contraseña)
+            var user = await _repo.GetByIdAsync(userId, ct);
+            if (user == null)
+            {
+                _logger.LogWarning("User {UserId} not found.", userId);
+                return NotFound(new { message = "User not found." });
+            }
+
+            // Solo estudiantes pueden tener carreras asociadas
+            if (!user.Role.Equals(UserRole.Student))
+            {
+                _logger.LogInformation("User {UserId} is not a Student. Career associations will be ignored.", userId);
+                return Ok(new { message = "No changes applied. Only students can be associated with careers." });
+            }
+
+            // Si llega acá, es un estudiante → aplicar los cambios
+            await _repo.UpdateUserCareersAsync(userId, careerIds, ct);
+
+            _logger.LogInformation("Updated {Count} career(s) for student {UserId}.", careerIds.Count, userId);
+            return NoContent();
+        }
+
+
+
+
     }
 
 }

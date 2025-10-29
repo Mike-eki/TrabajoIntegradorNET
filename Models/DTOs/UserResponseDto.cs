@@ -14,5 +14,8 @@ namespace Models.DTOs
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
+
+        // 🆕 Propiedad adicional solo para visualización en el DataGridView
+        public string CareersSummary { get; set; } = "";
     }
 }

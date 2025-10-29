@@ -32,7 +32,40 @@ namespace WinFormsAdmin.Forms.Users
 
                 if (users != null && users.Any())
                 {
+                    foreach (var user in users)
+                    {
+                        try
+                        {
+                            // ✅ Solo si el usuario es Student
+                            if (user.Role.Equals("Student", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var careers = await _apiClient.GetListAsync<CareerResponseDto>($"/api/Users/{user.Id}/careers");
+
+                                if (careers != null && careers.Any())
+                                    user.CareersSummary = $"({careers.Count()}) carrera/s";
+                                else
+                                    user.CareersSummary = "Sin carreras";
+                            }
+                            else
+                            {
+                                user.CareersSummary = "-"; // o "No aplica"
+                            }
+                        }
+                        catch
+                        {
+                            user.CareersSummary = "Error al cargar";
+                        }
+                    }
+
+                    dgvUsers.DataSource = null;
                     dgvUsers.DataSource = users;
+
+                    // 🔄 Rellenar la columna de carreras manualmente (si es columna custom)
+                    foreach (DataGridViewRow row in dgvUsers.Rows)
+                    {
+                        var user = (UserResponseDto)row.DataBoundItem;
+                        row.Cells["colCareers"].Value = user.CareersSummary;
+                    }
                 }
                 else
                 {
@@ -52,6 +85,8 @@ namespace WinFormsAdmin.Forms.Users
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+
 
 
         private void btnNew_Click(object sender, EventArgs e)
@@ -111,13 +146,13 @@ namespace WinFormsAdmin.Forms.Users
 
             try
             {
-                bool success = await _apiClient.DeleteAsync($"api/Users/{user.Id}");
-                if (success)
-                {
-                    MessageBox.Show("Usuario eliminado correctamente.", "Éxito",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadUsers();
-                }
+                await _apiClient.DeleteAsync($"api/Users/{user.Id}");
+                
+                
+                MessageBox.Show("Usuario eliminado correctamente.", "Éxito",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadUsers();
+               
             }
             catch (Exception ex)
             {

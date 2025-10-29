@@ -76,7 +76,6 @@ namespace EntityFramework.Repositories
             await _context.SaveChangesAsync();
         }
 
-
         public async Task UpdateAsync(Enrollment enrollment)
         {
             var existing = await _context.Enrollments.FindAsync(enrollment.Id);
@@ -109,5 +108,48 @@ namespace EntityFramework.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task EnrollStudentAsync(int commissionId, int studentId, CancellationToken ct = default)
+        {
+            var commission = await _context.Commissions.FindAsync(commissionId);
+            if (commission == null)
+                throw new InvalidOperationException("Commission not found.");
+
+            // Validar capacidad
+            var currentCount = await _context.Enrollments.CountAsync(e => e.CommissionId == commissionId, ct);
+            if (currentCount >= commission.Capacity)
+                throw new InvalidOperationException("No hay cupos disponibles en esta comisión.");
+
+            // Crear inscripción
+            var enrollment = new Enrollment
+            {
+                CommissionId = commissionId,
+                StudentId = studentId,
+                EnrollmentDate = DateTime.UtcNow
+            };
+
+            await _context.Enrollments.AddAsync(enrollment, ct);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        public async Task<Commission?> GetCommissionWithEnrollmentsAsync(int commissionId, CancellationToken ct = default)
+        {
+            return await _context.Commissions
+                .Include(c => c.Enrollments)
+                .FirstOrDefaultAsync(c => c.Id == commissionId, ct);
+        }
+
+        public async Task AddEnrollmentsAsync(IEnumerable<Enrollment> enrollments, CancellationToken ct = default)
+        {
+            await _context.Enrollments.AddRangeAsync(enrollments, ct);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        public async Task<int> GetEnrollmentCountAsync(int commissionId, CancellationToken ct = default)
+        {
+            return await _context.Enrollments
+                .CountAsync(e => e.CommissionId == commissionId, ct);
+        }
+
     }
 }
