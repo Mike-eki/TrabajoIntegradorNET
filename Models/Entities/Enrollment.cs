@@ -24,7 +24,7 @@ namespace Models.Entities
 
         [Required]
         [MaxLength(20)]
-        public string Status { get; set; } = "ENROLLED"; // ENROLLED, APPROVED, FAILED
+        public string Status { get; set; } = "Inscripto"; // Inscripto, Pendiente, Cerrado
     }
 }
 

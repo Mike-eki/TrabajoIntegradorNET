@@ -1,10 +1,11 @@
-﻿using Models.DTOs;
-using Models.Entities;
-using Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+﻿using ADO.NET;
 using EntityFramework;
 using EntityFramework.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Models.DTOs;
+using Models.Entities;
+using Services.Interfaces;
 
 namespace Services.Implementations
 {
@@ -13,12 +14,14 @@ namespace Services.Implementations
         private readonly IEnrollmentRepository _repo;
         private readonly AppDbContext _context;
         private readonly ILogger<EnrollmentService> _logger;
+        private readonly IUserRepository _userRepo;
 
-        public EnrollmentService(IEnrollmentRepository repo, AppDbContext context, ILogger<EnrollmentService> logger)
+        public EnrollmentService(IEnrollmentRepository repo, AppDbContext context, ILogger<EnrollmentService> logger, IUserRepository userRepo)
         {
             _repo = repo;
             _context = context;
             _logger = logger;
+            _userRepo = userRepo;
         }
 
         public async Task<EnrollmentBulkResponseDto> BulkEnrollStudentsAsync(
@@ -96,6 +99,41 @@ namespace Services.Implementations
                 Status = e.Status,
                 EnrollmentDate = e.EnrollmentDate
             }).ToList();
+        }
+
+        public async Task<List<EnrollmentDetailDto>> GetAllEnrollmentsWithDetailsAsync(CancellationToken ct = default)
+        {
+            // 1. Obtener todas las inscripciones desde EF
+            var enrollments = await _repo.GetAllEnrollmentsAsync(ct);
+            if (!enrollments.Any())
+                return new List<EnrollmentDetailDto>();
+
+            // 2. Obtener TODOS los usuarios (asumiendo que son pocos)
+            var allUsers = await _userRepo.GetAllAsync(ct);
+            var userDict = allUsers.ToDictionary(u => u.Id, u => u);
+
+            // 3. Mapear a DTO
+            var result = enrollments.Select(e =>
+            {
+                userDict.TryGetValue(e.StudentId, out var user);
+
+                return new EnrollmentDetailDto
+                {
+                    Id = e.Id,
+                    StudentId = e.StudentId,
+                    StudentFullName = user?.Fullname ?? "Desconocido",
+                    StudentLegajo = user?.Legajo ?? "Sin legajo",
+                    CommissionId = e.CommissionId,
+                    SubjectName = e.Commission?.Subject?.Name ?? "Sin materia",
+                    CycleYear = e.Commission?.CycleYear ?? 0,
+                    Status = e.Status,
+                    FinalGrade = e.FinalGrade,
+                    EnrollmentDate = e.EnrollmentDate,
+                    UnenrollmentDate = e.UnenrollmentDate
+                };
+            }).ToList();
+
+            return result;
         }
 
     }

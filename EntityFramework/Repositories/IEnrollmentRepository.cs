@@ -1,4 +1,5 @@
-﻿using Models.Entities;
+﻿using Models.DTOs;
+using Models.Entities;
 
 namespace EntityFramework.Repositories
 {
@@ -14,6 +15,8 @@ namespace EntityFramework.Repositories
         Task<Commission?> GetCommissionWithEnrollmentsAsync(int commissionId, CancellationToken ct = default);
         Task AddEnrollmentsAsync(IEnumerable<Enrollment> enrollments, CancellationToken ct = default);
         Task<int> GetEnrollmentCountAsync(int commissionId, CancellationToken ct = default);
+
+        Task<List<Enrollment>> GetAllEnrollmentsAsync(CancellationToken ct = default);
     }
 
 }

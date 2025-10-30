@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Models.DTOs;
 using Models.Entities;
 
 namespace EntityFramework.Repositories
@@ -90,9 +91,9 @@ namespace EntityFramework.Repositories
             if (enrollment.FinalGrade.HasValue)
             {
                 if (enrollment.FinalGrade.Value >= 6)
-                    existing.Status = "APPROVED";
+                    existing.Status = "Aprobado";
                 else
-                    existing.Status = "FAILED";
+                    existing.Status = "Cerrado";
             }
 
             _context.Enrollments.Update(existing);
@@ -150,6 +151,16 @@ namespace EntityFramework.Repositories
             return await _context.Enrollments
                 .CountAsync(e => e.CommissionId == commissionId, ct);
         }
+
+        public async Task<List<Enrollment>> GetAllEnrollmentsAsync(CancellationToken ct = default)
+        {
+            return await _context.Enrollments
+                .AsNoTracking() // ✅ Mejor rendimiento, no vamos a modificar
+                .Include(e => e.Commission)
+                    .ThenInclude(c => c.Subject)
+                .ToListAsync(ct);
+        }
+
 
     }
 }

@@ -12,6 +12,7 @@ using WinFormsAdmin.Forms.Careers;
 using WinFormsAdmin.Forms.Subjects;
 using WinFormsAdmin.Forms.Users;
 using WinFormsAdmin.Forms.Commissions;
+using WinFormsAdmin.Forms.Enrollments;
 
 namespace WinFormsAdmin.Forms
 {
@@ -89,7 +90,7 @@ namespace WinFormsAdmin.Forms
 
         private void menuComisiones_Click(object sender, EventArgs e)
         {
-            // Verificar si ya hay una ventana de materias abierta
+            
             foreach (Form childForm in this.MdiChildren)
             {
                 if (childForm is FormCommissionManager)
@@ -106,6 +107,27 @@ namespace WinFormsAdmin.Forms
             };
             usersManager.Show();
         }
+
+        private void menuEnrollments_Click(object sender, EventArgs e)
+        {
+            foreach (Form childForm in this.MdiChildren)
+            {
+                if (childForm is FormCommissionManager)
+                {
+                    childForm.Activate();
+                    return;
+                }
+            }
+
+            // Crear nueva ventana
+            var enrollManager = new FormEnrollManager(_apiClient)
+            {
+                MdiParent = this
+            };
+            enrollManager.Show();
+
+        }
+
         private async void menuSalir_Click(object sender, EventArgs e)
         {
             await _apiClient.LogoutAsync();

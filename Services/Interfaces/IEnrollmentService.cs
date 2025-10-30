@@ -10,7 +10,7 @@ namespace Services.Interfaces
             CancellationToken ct = default);
 
         Task<List<EnrollmentResponseDto>> GetByCommissionIdAsync(int commissionId, CancellationToken ct = default);
-
+        Task<List<EnrollmentDetailDto>> GetAllEnrollmentsWithDetailsAsync(CancellationToken ct = default);
 
     }
 }
