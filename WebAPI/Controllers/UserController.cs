@@ -125,42 +125,6 @@ namespace MyApp.Controllers
             return Ok(response);
         }
 
-        //[Authorize(Roles = "Admin")]
-        //[HttpGet]
-        //public async Task<IActionResult> GetAllUsers(string? role = null,  CancellationToken ct = default)
-        //{
-        //    _logger.LogInformation("Retrieving users with role: {Role}", role ?? "All");
-
-        //    var users = await _repo.GetAllAsync(ct);
-
-        //    if (users == null || users.Count == 0)
-        //    {
-        //        _logger.LogWarning("No users found in the system.");
-        //        return Ok(new List<UserResponseDto>()); // devuelve lista vacía (no error)
-        //    }
-
-        //    // Filtrar por rol si se proporciona el parámetro
-        //    if (!string.IsNullOrEmpty(role))
-        //    {
-        //        UserRoleConverter.FromString(role); // Validar rol
-        //        users = users.Where(u => u.Role.ToString().Equals(role, StringComparison.OrdinalIgnoreCase)).ToList();
-        //    }
-
-        //    var dtoList = users.Select(u => new UserResponseDto
-        //    {
-        //        Id = u.Id,
-        //        Username = u.Username,
-        //        Legajo = u.Legajo,
-        //        Email = u.Email,
-        //        FullName = u.Fullname,
-        //        Role = u.Role.ToString()
-        //    }).ToList();
-
-        //    _logger.LogInformation("Retrieved {Count} users successfully.", dtoList.Count);
-
-        //    return Ok(dtoList);
-        //}
-
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAllUsers(string? role = null, int? subjectId = null, CancellationToken ct = default)
@@ -226,32 +190,42 @@ namespace MyApp.Controllers
             user.Email = request.Email;
             user.Fullname = request.FullName;
 
-            //// ✅ Lógica de carreras según el rol
-            //if (user.Role == UserRole.Student)
-            //{
-            //    if (request.CareerIds != null && request.CareerIds.Any())
-            //    {
-            //        await _repo.UpdateUserCareersAsync(user.Id, request.CareerIds, ct);
-            //        _logger.LogInformation("Updated {Count} career(s) for student {UserId}.", request.CareerIds.Count, id);
-            //    }
-            //    else
-            //    {
-            //        // Si no envía ninguna carrera, se asume que las quiere limpiar
-            //        await _repo.UpdateUserCareersAsync(user.Id, new List<int>(), ct);
-            //        _logger.LogInformation("Removed all career associations for student {UserId}.", id);
-            //    }
-            //}
-            //else
-            //{
-            //    // Si el usuario ya no es estudiante, limpiar asociaciones previas
-            //    _logger.LogInformation("User {UserId} is not a Student. Removing all career associations.", id);
-            //    await _repo.UpdateUserCareersAsync(user.Id, new List<int>(), ct);
-            //}
 
             await _repo.UpdateAsync(user);
 
             _logger.LogInformation("User {Username} updated with ID {Id} and role {Role}.", user.Username, user.Id, UserRoleConverter.ToString(user.Role));
             return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role), user.Email, user.Fullname, user.Legajo });
+        }
+
+        [Authorize(Roles = "Student,Professor,Admin")]
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetUserProfile(CancellationToken ct)
+        {
+            try
+            {
+                int userClaimId;
+                bool parseSuccess = int.TryParse(User.FindFirst("user_id")?.Value, out userClaimId);
+                if (!parseSuccess)
+                {
+                    throw new Exception("No se logro parsear correctamente el token.");
+                }
+                var user = await _repo.GetByIdAsync(userClaimId);
+
+                var userDto = new UserProfileDto
+                {
+                    Email = user.Email,
+                    FullName = user.Fullname,
+                    Role = UserRoleConverter.ToString(user.Role)
+                };
+
+                return Ok(userDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user profile data");
+                return StatusCode(500, new { message = "Error interno al obtener datos de perfil de usuario.", detail = ex.Message });
+            }
+            
         }
 
         [Authorize(Roles = "Admin")]
