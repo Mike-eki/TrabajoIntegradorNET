@@ -197,7 +197,7 @@ namespace MyApp.Controllers
             return Ok(new { user.Id, user.Username, Role = UserRoleConverter.ToString(user.Role), user.Email, user.Fullname, user.Legajo });
         }
 
-        [Authorize(Roles = "Student,Professor,Admin")]
+        [Authorize(Roles = "Student,Professor")]
         [HttpGet("profile")]
         public async Task<IActionResult> GetUserProfile(CancellationToken ct)
         {
@@ -211,21 +211,47 @@ namespace MyApp.Controllers
                 }
                 var user = await _repo.GetByIdAsync(userClaimId);
 
+                if (user == null)
+                {
+                    return NotFound(new { message = "Usuario no encontrado." });
+                }
+                // Obtener carerras asociadas al user
+                var careerIds = _repo.GetCareerIdsByUserIdAsync(user.Id, ct);
+                var careersList = new List<CareerSimpleDto>();
+
+                foreach (var careerId in careerIds.Result)
+                {
+                    var userCareer = await _careerRepo.GetByIdAsync(careerId);
+                    if (userCareer != null)
+                    {
+                        careersList.Add(new CareerSimpleDto
+                        {
+                            Id = userCareer.Id,
+                            Name = userCareer.Name,
+                        });
+                    }
+                    else
+                    {
+                        throw new Exception($"No se encontro la carrera con Id {careerId}.");
+                    }
+                }
+
                 var userDto = new UserProfileDto
                 {
                     Email = user.Email,
                     FullName = user.Fullname,
-                    Role = UserRoleConverter.ToString(user.Role)
+                    Role = UserRoleConverter.ToString(user.Role),
+                    Careers = careersList
                 };
 
                 return Ok(userDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving user profile data");
-                return StatusCode(500, new { message = "Error interno al obtener datos de perfil de usuario.", detail = ex.Message });
+                _logger.LogError(ex, "Error al obtener perfil del usuario");
+                return StatusCode(500, new { message = "Error al obtener perfil del usuario", detail = ex.Message });
             }
-            
+
         }
 
         [Authorize(Roles = "Admin")]
@@ -318,7 +344,7 @@ namespace MyApp.Controllers
             return Ok(userCareers);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Student,Professor")]
         [HttpPut("{userId}/careers")]
         public async Task<IActionResult> UpdateUserCareers(int userId, [FromBody] List<int> careerIds, CancellationToken ct = default)
         {

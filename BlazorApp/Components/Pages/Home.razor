@@ -24,6 +24,20 @@ else
                 <h5 class="card-title">Mi Perfil</h5>
                 <p><strong>Nombre:</strong> @ProfileService.CurrentProfile.FullName</p>
                 <p><strong>Email:</strong> @ProfileService.CurrentProfile.Email</p>
+                <h5 class="card-title">Carreras inscriptas:</h5>
+                @if (ProfileService.CurrentProfile.Careers.Count != 0 && ProfileService.CurrentProfile.Careers != null)
+                {
+                    <ul>
+                        @foreach (var career in ProfileService.CurrentProfile.Careers)
+                        {
+                            <li>@career.Name</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>No estas inscripto a ninguna. Ir al menú de "Carerras"</p>
+                }
             </div>
         </div>
     }

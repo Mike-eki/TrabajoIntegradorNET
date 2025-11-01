@@ -1,0 +1,177 @@
+﻿@using BlazorApp.Models
+@using BlazorApp.Services
+
+@page "/careers"
+@inject CareerService CareerService
+@inject UserProfileService ProfileService
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Carreras</PageTitle>
+
+    <h2>Selecciona una carrera</h2>
+
+    @if (careers == null)
+    {
+        <p>Cargando carreras...</p>
+    }
+    else if (careers.Count == 0)
+    {
+        <div class="alert alert-info">No hay carreras disponibles.</div>
+    }
+    else
+    {
+        <div class="mb-3">
+            <label for="careerSelect" class="form-label">Carrera</label>
+            <select id="careerSelect" class="form-select" @onchange="OnCareerSelected" disabled="@isEnrolling">
+                <option value="">-- Selecciona una carrera --</option>
+                @foreach (var career in careers)
+                {
+                    <option value="@career.Id">@career.Name</option>
+                }
+            </select>
+        </div>
+
+        @if (selectedCareer != null)
+        {
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Materias de: @selectedCareer.Name</h5>
+                </div>
+                <div class="card-body">
+                    @if (selectedCareer.Subjects.Count == 0)
+                    {
+                        <p class="text-muted">Esta carrera no tiene materias asignadas.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group">
+                            @foreach (var subject in selectedCareer.Subjects)
+                            {
+                                <li class="list-group-item">@subject.Name</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+                <div class="mt-4">
+                    @if (isAlreadyEnrolled)
+                    {
+                        <div class="alert alert-info">
+                            Ya estás inscripto en esta carrera.
+                        </div>
+                    }
+                    else
+                    {
+                        <button class="btn btn-success"
+                                @onclick="EnrollInCareer"
+                                disabled="@isEnrolling">
+                            @(isEnrolling ? "Inscribiendo..." : "Inscribirse a esta carrera")
+                        </button>
+                    }
+
+                    @if (!string.IsNullOrEmpty(message))
+                    {
+                        <div class="alert alert-@(isSuccess ? "success" : "danger") mt-3">
+                            @message
+                        </div>
+                    }
+                </div>
+            }
+        }
+    }
+
+
+@code {
+    private bool shouldRender = false;
+    private bool isEnrolling = false;
+    private bool isAlreadyEnrolled = false;
+    private string? message = null;
+    private bool isSuccess = false;
+    private List<CareerResponseDto>? careers;
+    private CareerResponseDto? selectedCareer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = Navigation.Uri;
+            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            return;
+        }
+
+        careers = await CareerService.GetCareersAsync();
+        shouldRender = true;
+    }
+
+    private async Task OnCareerSelected(ChangeEventArgs e)
+    {
+        message = null;
+        isAlreadyEnrolled = false;
+        selectedCareer = null;
+
+        var careerId = e.Value?.ToString();
+        if (int.TryParse(careerId, out int id))
+        {
+            selectedCareer = careers?.FirstOrDefault(c => c.Id == id);
+
+            // ✅ Verificar si ya está inscripto
+            if (selectedCareer != null)
+            {
+                await EnsureProfileLoaded();
+                isAlreadyEnrolled = ProfileService.CurrentProfile?.Careers
+                    .Any(c => c.Id == selectedCareer.Id) == true;
+            }
+        }
+    }
+
+    private async Task EnrollInCareer()
+    {
+        if (selectedCareer == null || isAlreadyEnrolled)
+            return;
+
+        var userId = AuthService.GetUserId();
+        if (!userId.HasValue)
+        {
+            message = "No se pudo obtener tu ID de usuario.";
+            isSuccess = false;
+            return;
+        }
+
+        isEnrolling = true;
+        StateHasChanged();
+
+        var success = await CareerService.EnrollInCareerAsync(userId.Value, selectedCareer.Id);
+
+        isEnrolling = false;
+        isSuccess = success;
+        message = success
+            ? "¡Te has inscripto correctamente en la carrera!"
+            : "Error al inscribirte. Intenta nuevamente.";
+
+        // ✅ Si la inscripción fue exitosa, actualizar el perfil para reflejar el cambio
+        if (success)
+        {
+            isAlreadyEnrolled = true;
+            await ProfileService.LoadProfileAsync(); // Recargar perfil
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task EnsureProfileLoaded()
+    {
+        if (ProfileService.CurrentProfile == null)
+        {
+            await ProfileService.LoadProfileAsync();
+        }
+    }
+
+}

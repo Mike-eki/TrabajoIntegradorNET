@@ -10,6 +10,8 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7114") });
 builder.Services.AddScoped<UserProfileService>();
+builder.Services.AddScoped<CareerService>();
+builder.Services.AddScoped<JwtTokenParserService>();
 
 var app = builder.Build();
 

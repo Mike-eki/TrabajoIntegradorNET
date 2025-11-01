@@ -10,7 +10,6 @@
             <span class="navbar-text me-3 text-white">
                 Hola, @(ProfileService.CurrentProfile?.FullName ?? AuthService.Username)
             </span>
-            <button class="btn btn-outline-light" @onclick="Logout">Cerrar sesión</button>
         }
     </div>
 </div>
@@ -25,13 +24,18 @@
                 </a>
             </div>
             <div class="nav-item px-3">
-                <a class="nav-link" href="/counter">
-                    <span class="oi oi-plus" aria-hidden="true"></span> Contador
+                <a class="nav-link" href="/careers">
+                    <span class="oi oi-book" aria-hidden="true"></span> Carreras
                 </a>
             </div>
             <div class="nav-item px-3">
-                <a class="nav-link" href="/weather">
-                    <span class="oi oi-cloud" aria-hidden="true"></span> Clima
+                <a class="nav-link" href="/commissions">
+                    <span class="oi oi-book" aria-hidden="true"></span> Comisiones
+                </a>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" @onclick="Logout">
+                    <span class="oi oi-account-logout"></span>Cerrar sesión
                 </a>
             </div>
         }

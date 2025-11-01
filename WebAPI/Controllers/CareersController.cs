@@ -9,7 +9,6 @@ namespace MyApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
     public class CareersController : ControllerBase
     {
         private readonly ICareerRepository _repo;
@@ -19,7 +18,7 @@ namespace MyApp.Controllers
             _repo = repo;
             _logger = logger;
         }
-
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetCareers()
         {
@@ -39,6 +38,7 @@ namespace MyApp.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCareer(int id)
         {
@@ -60,6 +60,7 @@ namespace MyApp.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}/Subjects")]
         public async Task<IActionResult> AssignSubjects(int id, [FromBody] int[] subjectIds)
         {
@@ -92,6 +93,14 @@ namespace MyApp.Controllers
             }
         }
 
+        //[Authorize(Roles = "Student")]
+        //[HttpGet]
+        //public async Task<IActionResult> GetUserCareers(int userId, int[] careerIds)
+        //{
+
+        //}
+
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateCareer([FromBody] CareerSimpleDto dto)
         {
@@ -110,6 +119,7 @@ namespace MyApp.Controllers
             return CreatedAtAction(nameof(GetCareer), new { id = career.Id }, response);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCareer(int id, [FromBody] CareerCreateDto dto)
         {
@@ -125,6 +135,7 @@ namespace MyApp.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCareer(int id)
         {
