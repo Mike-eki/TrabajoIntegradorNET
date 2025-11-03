@@ -28,6 +28,23 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
 
+        [HttpPut("{id}/status")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.Status) || !IsValidStatus(dto.Status))
+                return BadRequest("Estado inválido.");
+
+            var enrollment = await _enrollmentRepo.GetByIdAsync(id);
+            if (enrollment == null)
+                return NotFound();
+
+            enrollment.Status = dto.Status;
+            await _enrollmentRepo.UpdateAsync(enrollment);
+
+            return NoContent();
+        }
+
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllEnrollments(CancellationToken ct = default)
@@ -147,7 +164,7 @@ namespace WebAPI.Controllers
 
         [HttpPut("{id}/grade")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> SetFinalGrade(int id, [FromBody] GradeUpdateDto dto)
+        public async Task<IActionResult> SetFinalGradeOnlyAdmin(int id, [FromBody] GradeUpdateDto dto)
         {
             if (dto.FinalGrade.HasValue && (dto.FinalGrade < 0 || dto.FinalGrade > 10))
                 return BadRequest("La nota debe estar entre 0 y 10.");
@@ -162,21 +179,68 @@ namespace WebAPI.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id}/status")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusDto dto)
+        
+
+        [Authorize(Roles = "Professor")]
+        [HttpGet("my-commissions/students")]
+        public async Task<IActionResult> GetStudentsInMyCommissions(CancellationToken ct = default)
         {
-            if (string.IsNullOrEmpty(dto.Status) || !IsValidStatus(dto.Status))
-                return BadRequest("Estado inválido.");
+            try
+            {
+                int professorId;
+                int.TryParse(User.FindFirst("user_id")?.Value, out professorId);
+                if (string.IsNullOrEmpty(professorId.ToString()) || !int.TryParse(professorId.ToString(), out int currentUserId))
+                    return Unauthorized();
 
-            var enrollment = await _enrollmentRepo.GetByIdAsync(id);
-            if (enrollment == null)
-                return NotFound();
+                if (professorId != currentUserId)
+                    return Forbid(); // 403 Forbidden
 
-            enrollment.Status = dto.Status;
-            await _enrollmentRepo.UpdateAsync(enrollment);
+                var result = await _enrollmentService.GetStudentsInProfessorCommissionsAsync(professorId, ct);
 
-            return NoContent();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener estudiantes para profesor");
+                return StatusCode(500, new { Message = "Error interno al obtener estudiantes." });
+            }
+        }
+
+        [Authorize(Roles = "Professor")]
+        [HttpPut("final-grade/{enrollmentId}")]
+        public async Task<IActionResult> SetFinalGrade(
+                    int enrollmentId,
+                    [FromBody] FinalGradeRequestDto request,
+                    CancellationToken ct = default)
+        {
+            try
+            {
+                int professorId;
+                int.TryParse(User.FindFirst("user_id")?.Value, out professorId);
+                if (string.IsNullOrEmpty(professorId.ToString()) || !int.TryParse(professorId.ToString(), out int currentUserId))
+                    return Unauthorized();
+
+                if (professorId != currentUserId)
+                    return Forbid(); // 403 Forbidden
+
+                // 1. Validar datos
+                if (request.FinalGrade < 0 || request.FinalGrade > 10)
+                    return BadRequest(new { Message = "La nota debe estar entre 0 y 10." });
+
+                // 3. Asignar nota
+                await _enrollmentService.SetFinalGradeAsync(enrollmentId, request.FinalGrade, ct);
+
+                return Ok(new { Message = "Nota final asignada correctamente." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al asignar nota final a inscripción {EnrollmentId}", enrollmentId);
+                return StatusCode(500, new { Message = "Error interno al asignar nota." });
+            }
         }
 
         private static bool IsValidStatus(string status) =>

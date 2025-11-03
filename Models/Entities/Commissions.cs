@@ -17,10 +17,6 @@ namespace Models.Entities
         // FK → User (profesor asignado, puede ser nulo)
         public int? ProfessorId { get; set; }
 
-        // ⚠️ No establecemos aquí la navegación hacia User
-        // porque User está en el dominio ADO.NET, no en EFCore.
-        // Podremos representarlo más adelante si unificamos modelos.
-
         [Required]
         public int CycleYear { get; set; } // Ej: 2025
 

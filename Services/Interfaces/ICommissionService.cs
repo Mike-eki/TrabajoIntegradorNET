@@ -7,5 +7,7 @@ namespace Services.Interfaces
         Task<CommissionWithProfessorDto?> GetByIdAsync(int id, CancellationToken ct = default);
 
         Task<int> GetEnrollmentAmountOfOneCommission(int commissionId, CancellationToken ct = default);
+
+        Task<List<UnassignedCommissionDto>> GetUnassignedCommissionsForProfessorAsync(int professorId, CancellationToken ct);
     }
 }

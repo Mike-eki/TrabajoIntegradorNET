@@ -155,12 +155,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!AuthService.IsAuthenticated)
-        {
-            var returnUrl = Navigation.Uri;
-            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
-            return;
-        }
+        // if (!AuthService.IsAuthenticated)
+        // {
+        //     var returnUrl = Navigation.Uri;
+        //     Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+        //     return;
+        // }
 
         // ✅ Asegurar que el perfil esté cargado primero
         if (ProfileService.CurrentProfile == null)

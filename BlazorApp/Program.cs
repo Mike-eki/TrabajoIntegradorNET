@@ -15,6 +15,11 @@ builder.Services.AddScoped<JwtTokenParserService>();
 builder.Services.AddScoped<CommissionService>();
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<AcademicStatusService>();
+builder.Services.AddScoped<ProfessorService>();
+
+builder.Services.AddAuthorizationCore();
+builder.Services.AddAuthentication();
+
 
 var app = builder.Build();
 

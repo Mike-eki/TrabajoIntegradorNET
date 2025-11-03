@@ -17,6 +17,21 @@ namespace EntityFramework.Repositories
             _userRepository = userRepository;
         }
 
+        public async Task<List<Commission>> GetCommissionByProfessorIdAsync(int professorId ,CancellationToken ct = default)
+        {
+            return await _context.Commissions
+                .Where(c => c.ProfessorId == professorId)
+                .ToListAsync(ct);
+        }
+
+        public async Task<List<Commission>> GetUnassignedCommissionsAsync(CancellationToken ct)
+        {
+            return await _context.Commissions
+                .Where(c => c.ProfessorId == null)
+                .ToListAsync(ct);
+        }
+
+
         public async Task<IEnumerable<Commission>> GetAllAsync()
         {
             return await _context.Commissions
@@ -117,7 +132,7 @@ namespace EntityFramework.Repositories
             if (professorId == null)
             {
                 commission.ProfessorId = null;
-                commission.Status = "Pending";
+                commission.Status = "Pendiente";
                 await _context.SaveChangesAsync(ct);
                 return;
             }
@@ -131,7 +146,7 @@ namespace EntityFramework.Repositories
 
             // Asignar profesor
             commission.ProfessorId = professorId.Value;
-            commission.Status = "Active";
+            commission.Status = "Activo";
 
             await _context.SaveChangesAsync(ct);
         }
@@ -145,5 +160,7 @@ namespace EntityFramework.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        
     }
 }

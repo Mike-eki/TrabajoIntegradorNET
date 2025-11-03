@@ -1,0 +1,179 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@using BlazorApp.Models
+@using BlazorApp.Services
+@using BlazorApp.Components.Layout
+
+@page "/professor/unassigned-commissions"
+
+@layout ProfessorLayout
+@inject ProfessorService ProfessorService
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Comisiones sin asignar</PageTitle>
+
+    <h2 class="mb-4">Comisiones sin profesor asignado</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando comisiones...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="oi oi-warning"></i> @errorMessage
+            <button class="btn btn-sm btn-outline-danger mt-2" @onclick="LoadCommissions">
+                <i class="oi oi-reload"></i> Reintentar
+            </button>
+        </div>
+    }
+    else if (commissions == null || !commissions.Any())
+    {
+        <div class="alert alert-info">
+            No hay comisiones sin asignar en este momento.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Materia</th>
+                        <th>Ciclo</th>
+                        <th>Día</th>
+                        <th>Horario</th>
+                        <th>Cupo</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var commission in commissions)
+                    {
+                        <tr>
+                            <td>@commission.SubjectName</td>
+                            <td>@commission.CycleYear</td>
+                            <td>@commission.DayOfWeek</td>
+                            <td>@commission.StartTime - @commission.EndTime</td>
+                            <td>
+                                @commission.EnrolledCount / @commission.Capacity
+                                <span class="badge bg-@(commission.AvailableSeats > 0 ? "success" : "danger") ms-2">
+                                    @(commission.AvailableSeats > 0 ? $"{commission.AvailableSeats} disponibles" : "Sin cupo")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-@(commission.Status == "Pendiente" ? "warning" : "secondary")">
+                                    @commission.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (commission.Status == "Pendiente")
+                                {
+                                    <button class="btn btn-sm btn-primary"
+                                            @onclick="() => AssignProfessor(commission.Id)"
+                                            disabled="@isAssigning">
+                                        @(isAssigningCommissionId == commission.Id ? "Asignando..." : "Asignarme")
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        No disponible
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private bool shouldRender = false;
+    private bool isLoading = false;
+    private bool isAssigning = false;
+    private int? isAssigningCommissionId;
+    private List<UnassignedCommissionDto>? commissions;
+    private string? errorMessage = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        shouldRender = true;
+        await LoadCommissions();
+    }
+
+    private async Task LoadCommissions()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            commissions = await ProfessorService.GetUnassignedCommissionsAsync();
+            Console.WriteLine($"✅ Comisiones cargadas: {commissions?.Count ?? 0}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar comisiones: {ex.Message}";
+            Console.WriteLine($"❌ Error en LoadCommissions: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AssignProfessor(int commissionId)
+    {
+        isAssigning = true;
+        isAssigningCommissionId = commissionId;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var success = await ProfessorService.AssignProfessorToCommissionAsync(commissionId);
+            if (success)
+            {
+                Console.WriteLine($"✅ Asignación exitosa a comisión {commissionId}");
+                // Recargar la lista
+                await LoadCommissions();
+            }
+            else
+            {
+                errorMessage = "No se pudo asignar la comisión. Intenta nuevamente.";
+                Console.WriteLine($"❌ Fallo en asignación a comisión {commissionId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al asignar: {ex.Message}";
+            Console.WriteLine($"💥 Excepción en AssignProfessor: {ex.Message}");
+        }
+        finally
+        {
+            isAssigning = false;
+            isAssigningCommissionId = null;
+            StateHasChanged();
+        }
+    }
+}

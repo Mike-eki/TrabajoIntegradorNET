@@ -68,30 +68,6 @@ public class AuthenticationService
 
         var response = await _httpClient.SendAsync(request);
 
-        //// Si es 401 y tenemos refresh token, intentar renovar
-        //if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && !string.IsNullOrEmpty(RefreshToken))
-        //{
-        //    var renewed = await RefreshAccessTokenAsync();
-        //    if (renewed)
-        //    {
-        //        // Reintentar la misma solicitud con el nuevo token
-        //        var newRequest = new HttpRequestMessage(request.Method, request.RequestUri);
-        //        newRequest.Headers.Authorization =
-        //            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
-
-        //        // Copiar contenido si es POST/PUT
-        //        if (request.Content != null)
-        //            newRequest.Content = request.Content;
-
-        //        return await _httpClient.SendAsync(newRequest);
-        //    }
-        //    else
-        //    {
-        //        // No se pudo renovar → cerrar sesión
-        //        Logout();
-        //    }
-        //}
-
         return response;
     }
 

@@ -15,11 +15,13 @@ namespace Services.Implementations
         private readonly IEnrollmentRepository _repo;
         private readonly ICareerRepository _careerRepository;
         private readonly ISubjectRepository _subjectRepository;
+        private readonly ICommissionRepository _commissionRepo;
         private readonly AppDbContext _context;
         private readonly ILogger<EnrollmentService> _logger;
         private readonly IUserRepository _userRepo;
 
-        public EnrollmentService(IEnrollmentRepository repo, AppDbContext context, ILogger<EnrollmentService> logger, IUserRepository userRepo, ICareerRepository careerRepository, ISubjectRepository subjectRepository)
+        public EnrollmentService(IEnrollmentRepository repo, AppDbContext context, ILogger<EnrollmentService> logger, IUserRepository userRepo, ICareerRepository careerRepository, ISubjectRepository subjectRepository,
+            ICommissionRepository commissionRepo)
         {
             _repo = repo;
             _context = context;
@@ -27,6 +29,61 @@ namespace Services.Implementations
             _userRepo = userRepo;
             _careerRepository = careerRepository;
             _subjectRepository = subjectRepository;
+            _commissionRepo = commissionRepo;
+        }
+
+        public async Task SetFinalGradeAsync(int enrollmentId, int finalGrade, CancellationToken ct)
+        {
+            var enrollment = await _repo.GetByIdAsync(enrollmentId);
+            if (enrollment == null)
+                throw new InvalidOperationException("Inscripción no encontrada.");
+            enrollment.FinalGrade = finalGrade;
+            await _repo.UpdateAsync(enrollment);
+        }
+
+        public async Task<List<ProfessorCommissionStudentsDto>> GetStudentsInProfessorCommissionsAsync(int professorId, CancellationToken ct)
+        {
+            // 1. Obtener comisiones del profesor
+            var commissions = await _commissionRepo.GetCommissionByProfessorIdAsync(professorId, ct);
+
+            var result = new List<ProfessorCommissionStudentsDto>();
+
+            foreach (var commission in commissions)
+            {
+                // 2. Obtener materia
+                var subject = await _subjectRepository.GetByIdAsync(commission.SubjectId);
+
+                // 3. Obtener estudiantes
+                var enrollments = await _repo.GetEnrollmentsByCommissionIdAsync(commission.Id, ct);
+                var students = new List<StudentInCommissionDto>();
+
+                foreach (var enrollment in enrollments)
+                {
+                    var student = await _userRepo.GetByIdAsync(enrollment.StudentId, ct);
+                    students.Add(new StudentInCommissionDto
+                    {
+                        EnrollmentId = enrollment.Id,
+                        StudentId = student.Id,
+                        StudentName = student.Fullname,
+                        EnrollmentNumber = student.Legajo,
+                        FinalGrade = enrollment.FinalGrade,
+                        Status = enrollment.Status
+                    });
+                }
+
+                result.Add(new ProfessorCommissionStudentsDto
+                {
+                    CommissionId = commission.Id,
+                    SubjectName = subject?.Name ?? "Materia desconocida",
+                    CycleYear = commission.CycleYear,
+                    DayOfWeek = commission.DayOfWeek,
+                    StartTime = commission.StartTime.ToString(@"hh\:mm"),
+                    EndTime = commission.EndTime.ToString(@"hh\:mm"),
+                    Students = students
+                });
+            }
+
+            return result;
         }
 
         public async Task<EnrollmentBulkResponseDto> BulkEnrollStudentsAsync(

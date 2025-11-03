@@ -1,0 +1,124 @@
+﻿@using BlazorApp.Services
+@using BlazorApp.Models
+
+@inherits LayoutComponentBase
+
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject UserProfileService ProfileService
+
+<!-- ✅ Estructura mínima con clases CSS -->
+<div class="sidebar">
+    <ProfessorNavMenu />
+</div>
+<div class="main">
+    <div class="top-row">
+        <div class="container-fluid">
+            <a class="navbar-brand text-white" href="">Panel del Profesor</a>
+            @if (AuthService.IsAuthenticated)
+            {
+                <span class="text-white ms-3">
+                    Hola, @(ProfileService.CurrentProfile?.FullName ?? AuthService.Username)
+                </span>
+                <button class="btn btn-outline-light btn-sm ms-2" @onclick="Logout">Cerrar sesión</button>
+            }
+        </div>
+    </div>
+    <div class="content">
+        @Body
+    </div>
+</div>
+
+<style>
+    .sidebar {
+        width: 250px;
+        height: 100vh;
+        background-color: #2c3e50;
+        position: fixed;
+        left: 0;
+        top: 0;
+        transition: width 0.3s ease;
+        z-index: 1000;
+    }
+
+    .main {
+        margin-left: 250px;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        background-color: #f4f6f7;
+        transition: margin-left 0.3s ease;
+    }
+
+    .top-row {
+        background-color: #34495e;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .navbar-brand {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #ecf0f1 !important;
+        text-decoration: none;
+    }
+
+    .container-fluid {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .content {
+        padding: 20px;
+        background-color: white;
+        min-height: calc(100vh - 70px);
+    }
+
+    .btn-outline-light {
+        border: 1px solid #ecf0f1;
+        color: #ecf0f1;
+        transition: all 0.3s ease;
+    }
+
+        .btn-outline-light:hover {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+
+
+</style>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Verificar autenticación
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = Uri.EscapeDataString(Navigation.Uri);
+            Navigation.NavigateTo($"/login?returnUrl={returnUrl}");
+            return;
+        }
+
+        // Verificar rol de profesor
+        if (!string.Equals(AuthService.Role, "Professor", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/home");
+            return;
+        }
+
+        // Cargar perfil si no está cargado
+        if (ProfileService.CurrentProfile == null)
+        {
+            await ProfileService.LoadProfileAsync();
+        }
+    }
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login");
+    }
+}

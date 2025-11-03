@@ -1,0 +1,107 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@using BlazorApp.Models
+@using BlazorApp.Services
+@using BlazorApp.Components.Layout
+
+
+@page "/professor/my-commissions"
+
+@layout ProfessorLayout
+@inject ProfessorService ProfessorService
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Mis comisiones</PageTitle>
+
+    <h2 class="mb-4">Mis comisiones asignadas</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando mis comisiones...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="oi oi-warning"></i> @errorMessage
+            <button class="btn btn-sm btn-outline-danger mt-2" @onclick="LoadCommissions">
+                <i class="oi oi-reload"></i> Reintentar
+            </button>
+        </div>
+    }
+    else if (commissions == null || !commissions.Any())
+    {
+        <div class="alert alert-info">
+            No tienes comisiones asignadas en este momento.
+        </div>
+    }
+    else
+    {
+        @foreach (var commission in commissions)
+        {
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">@commission.SubjectName - Ciclo @commission.CycleYear</h5>
+                    <small>@commission.DayOfWeek: @commission.StartTime - @commission.EndTime</small>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong>Estudiantes:</strong> @commission.Students.Count
+                    </p>
+                    <a href="/professor/commission/@commission.CommissionId/students" class="btn btn-primary">
+                        Ver estudiantes
+                    </a>
+                </div>
+            </div>
+        }
+    }
+}
+
+@code {
+    private bool shouldRender = false;
+    private bool isLoading = false;
+    private List<ProfessorCommissionStudentsDto>? commissions;
+    private string? errorMessage = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        shouldRender = true;
+        await LoadCommissions();
+    }
+
+    private async Task LoadCommissions()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            commissions = await ProfessorService.GetMyCommissionsStudentsAsync();
+            Console.WriteLine($"✅ Comisiones cargadas: {commissions?.Count ?? 0}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar comisiones: {ex.Message}";
+            Console.WriteLine($"❌ Error en LoadCommissions: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

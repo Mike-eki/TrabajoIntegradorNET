@@ -130,14 +130,23 @@ namespace WebAPI.Controllers
             return Ok(new {Succes = true, Message = "Succefully commission edited"});
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Professor")]
         [HttpPut("{id}/assign-professor")]
-        public async Task<IActionResult> AssignProfessor(int id, [FromBody] AssignProfessorDto dto, CancellationToken ct)
+        public async Task<IActionResult> AssignProfessor(int id, CancellationToken ct = default)
         {
             try
             {
-                await _repo.AssignProfessorAsync(id, dto.ProfessorId, ct);
-                return Ok(new { Message = "Profesor asignado/desasignado correctamente." });
+                int professorId;
+                int.TryParse(User.FindFirst("user_id")?.Value, out professorId);
+                if (string.IsNullOrEmpty(professorId.ToString()) || !int.TryParse(professorId.ToString(), out int currentUserId))
+                    return Unauthorized();
+
+                if (professorId != currentUserId)
+                    return Forbid(); // 403 Forbidden
+
+                await _repo.AssignProfessorAsync(id, professorId, ct);
+
+                return Ok(new { Message = "Te has asignado correctamente a la comisión." });
             }
             catch (InvalidOperationException ex)
             {
@@ -145,10 +154,40 @@ namespace WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al asignar profesor a la comisión {CommissionId}", id);
+                _logger.LogError(ex, "Error al asignar profesor a comisión");
                 return StatusCode(500, new { Message = "Error interno al asignar profesor." });
             }
         }
+
+        [Authorize(Roles = "Professor")]
+        [HttpGet("unassigned")]
+        public async Task<IActionResult> GetUnassignedCommissions(CancellationToken ct = default)
+        {
+            try
+            {
+                // 1. Obtener ID del profesor autenticado
+                //var professorId = GetUserIdFromToken(); // ← Ya tienes este método
+                int professorId;
+                int.TryParse(User.FindFirst("user_id")?.Value, out professorId);
+                if (string.IsNullOrEmpty(professorId.ToString()) || !int.TryParse(professorId.ToString(), out int currentUserId))
+                    return Unauthorized();
+
+                if (professorId != currentUserId)
+                    return Forbid(); // 403 Forbidden
+
+                // 2. Llamar al servicio
+                var commissions = await _commissionService.GetUnassignedCommissionsForProfessorAsync(professorId, ct);
+
+                return Ok(commissions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener comisiones sin asignar para profesor");
+                return StatusCode(500, new { Message = "Error interno al obtener comisiones." });
+            }
+        }
+
+        
 
 
         [Authorize(Roles = "Admin,Professor")]

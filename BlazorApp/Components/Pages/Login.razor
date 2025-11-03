@@ -124,11 +124,24 @@
         var success = await AuthService.LoginAsync(username, password);
         if (success)
         {
-            // ✅ Cargar perfil INMEDIATAMENTE después del login
             await ProfileService.LoadProfileAsync();
 
-            var url = string.IsNullOrEmpty(ReturnUrl) ? "/home" : ReturnUrl;
-            Navigation.NavigateTo(url);
+            string targetUrl;
+            if (string.Equals(AuthService.Role, "Professor", StringComparison.OrdinalIgnoreCase))
+            {
+                targetUrl = "/professor/unassigned-commissions";
+            }
+            else if (string.Equals(AuthService.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                targetUrl = "/"; // Si tienes panel de admin
+            }
+            else // Por defecto para Student y otros roles
+            {
+                targetUrl = "/home";
+            }
+
+            // ✅ Navegar SIEMPRE después de asignar targetUrl
+            Navigation.NavigateTo(targetUrl);
         }
         else
         {

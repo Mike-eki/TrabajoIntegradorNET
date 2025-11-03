@@ -13,6 +13,13 @@ namespace EntityFramework.Repositories
             _context = context;
         }
 
+        public async Task<List<Enrollment>> GetEnrollmentsByCommissionIdAsync(int commissionId, CancellationToken ct = default)
+        {
+            return await _context.Enrollments
+                .Where(e => e.CommissionId == commissionId)
+                .ToListAsync(ct);
+        }
+
         public async Task<IEnumerable<Enrollment>> GetAllAsync(bool includeWithdrawn = false)
         {
             var query = _context.Enrollments

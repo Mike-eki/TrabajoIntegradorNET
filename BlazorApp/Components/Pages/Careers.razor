@@ -100,12 +100,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!AuthService.IsAuthenticated)
-        {
-            var returnUrl = Navigation.Uri;
-            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
-            return;
-        }
+        // if (!AuthService.IsAuthenticated)
+        // {
+        //     var returnUrl = Navigation.Uri;
+        //     Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+        //     return;
+        // }
 
         careers = await CareerService.GetCareersAsync();
         shouldRender = true;

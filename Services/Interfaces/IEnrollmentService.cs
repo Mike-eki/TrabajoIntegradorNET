@@ -1,10 +1,13 @@
-﻿using Models.DTOs;
+﻿using Azure.Core;
+using Models.DTOs;
 using Models.Entities;
 
 namespace Services.Interfaces
 {
     public interface IEnrollmentService
     {
+        Task SetFinalGradeAsync(int enrollmentId, int finalGrade, CancellationToken ct);
+        Task<List<ProfessorCommissionStudentsDto>> GetStudentsInProfessorCommissionsAsync(int professorId, CancellationToken ct);
         Task<EnrollmentBulkResponseDto> BulkEnrollStudentsAsync(
             EnrollmentBulkRequestDto request,
             CancellationToken ct = default);

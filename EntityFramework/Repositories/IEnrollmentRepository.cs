@@ -5,6 +5,7 @@ namespace EntityFramework.Repositories
 {
     public interface IEnrollmentRepository
     {
+        Task<List<Enrollment>> GetEnrollmentsByCommissionIdAsync(int commissionId, CancellationToken ct = default);
         Task<IEnumerable<Enrollment>> GetAllAsync(bool includeWithdrawn = false);
         Task<Enrollment?> GetByIdAsync(int id);
         Task AddAsync(Enrollment enrollment);

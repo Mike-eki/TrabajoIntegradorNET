@@ -6,6 +6,9 @@ namespace EntityFramework.Repositories
     public interface ICommissionRepository
     {
         Task<IEnumerable<CommissionWithProfessorDto>> GetAllCommissionsWithProfessorsAsync(CancellationToken ct = default);
+
+        Task<List<Commission>> GetCommissionByProfessorIdAsync(int professorId, CancellationToken ct = default);
+        Task<List<Commission>> GetUnassignedCommissionsAsync(CancellationToken ct);
         Task AssignProfessorAsync(int commissionId, int? professorId, CancellationToken ct = default);
         Task<IEnumerable<Commission>> GetAllAsync();
         Task<Commission?> GetByIdAsync(int id);

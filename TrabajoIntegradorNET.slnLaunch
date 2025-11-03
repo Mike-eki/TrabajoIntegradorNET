@@ -9,6 +9,10 @@
       {
         "Path": "BlazorApp\\BlazorApp.csproj",
         "Action": "Start"
+      },
+      {
+        "Path": "WinFormsAdmin\\WinFormsAdmin.csproj",
+        "Action": "Start"
       }
     ]
   }
