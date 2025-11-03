@@ -1,4 +1,5 @@
-﻿using EntityFramework.Repositories;
+﻿using Azure.Core;
+using EntityFramework.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -114,6 +115,34 @@ namespace WebAPI.Controllers
         {
             var result = await _enrollmentService.GetByCommissionIdAsync(commissionId, ct);
             return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("academicstatus/user/{userId}/career/{careerId}")]
+        public async Task<IActionResult> GetAcademicStatusByCareer(
+    int userId,
+    int careerId,
+    CancellationToken ct = default)
+        {
+            // ✅ Validar usuario autenticado
+            int userIdClaim;
+            int.TryParse(User.FindFirst("user_id")?.Value, out userIdClaim);
+            if (string.IsNullOrEmpty(userIdClaim.ToString()) || !int.TryParse(userIdClaim.ToString(), out int currentUserId))
+                return Unauthorized();
+
+            if (userId != currentUserId)
+                return Forbid(); // 403 Forbidden
+
+            try
+            {
+                var status = await _enrollmentService.GetAcademicStatusByCareerAsync(userId, careerId, ct);
+                return Ok(status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener estado académico para usuario {UserId}, carrera {CareerId}", userId, careerId);
+                return StatusCode(500, new { message = "Error interno al obtener estado académico." });
+            }
         }
 
         [HttpPut("{id}/grade")]

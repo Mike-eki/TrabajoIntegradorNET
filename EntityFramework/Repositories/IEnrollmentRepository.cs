@@ -17,6 +17,11 @@ namespace EntityFramework.Repositories
         Task<int> GetEnrollmentCountAsync(int commissionId, CancellationToken ct = default);
 
         Task<List<Enrollment>> GetAllEnrollmentsAsync(CancellationToken ct = default);
+
+        Task<List<EnrollmentWithSubjectDto>> GetValidAcademicEnrollmentsAsync(
+    int userId,
+    List<int> subjectIds,
+    CancellationToken ct);
     }
 
 }

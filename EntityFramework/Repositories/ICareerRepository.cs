@@ -13,5 +13,7 @@ namespace EntityFramework.Repositories
         Task AddAsync(Career career);
         Task UpdateAsync(Career career);
         Task DeleteAsync(int id);
+
+        Task<List<int>> GetSubjectIdsForCareerAsync(int careerId, CancellationToken ct);
     }
 }

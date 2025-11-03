@@ -14,6 +14,7 @@ builder.Services.AddScoped<CareerService>();
 builder.Services.AddScoped<JwtTokenParserService>();
 builder.Services.AddScoped<CommissionService>();
 builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<AcademicStatusService>();
 
 var app = builder.Build();
 

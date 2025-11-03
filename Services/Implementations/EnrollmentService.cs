@@ -13,16 +13,20 @@ namespace Services.Implementations
     public class EnrollmentService : IEnrollmentService
     {
         private readonly IEnrollmentRepository _repo;
+        private readonly ICareerRepository _careerRepository;
+        private readonly ISubjectRepository _subjectRepository;
         private readonly AppDbContext _context;
         private readonly ILogger<EnrollmentService> _logger;
         private readonly IUserRepository _userRepo;
 
-        public EnrollmentService(IEnrollmentRepository repo, AppDbContext context, ILogger<EnrollmentService> logger, IUserRepository userRepo)
+        public EnrollmentService(IEnrollmentRepository repo, AppDbContext context, ILogger<EnrollmentService> logger, IUserRepository userRepo, ICareerRepository careerRepository, ISubjectRepository subjectRepository)
         {
             _repo = repo;
             _context = context;
             _logger = logger;
             _userRepo = userRepo;
+            _careerRepository = careerRepository;
+            _subjectRepository = subjectRepository;
         }
 
         public async Task<EnrollmentBulkResponseDto> BulkEnrollStudentsAsync(
@@ -178,6 +182,48 @@ namespace Services.Implementations
                     UnenrollmentDate = e.UnenrollmentDate
                 };
             }).ToList();
+
+            return result;
+        }
+
+        public async Task<List<AcademicStatusDto>> GetAcademicStatusByCareerAsync(
+    int userId,
+    int careerId,
+    CancellationToken ct = default)
+        {
+            // ✅ 1. Obtener todas las materias de la carrera
+            var subjectIds = await _careerRepository.GetSubjectIdsForCareerAsync(careerId, ct);
+            if (subjectIds == null || !subjectIds.Any())
+                return new List<AcademicStatusDto>();
+
+            // ✅ 2. Obtener todas las inscripciones válidas del usuario
+            var validEnrollments = await _repo.GetValidAcademicEnrollmentsAsync(userId, subjectIds, ct);
+
+            // ✅ 3. Para cada materia, obtener la inscripción más relevante
+            var result = new List<AcademicStatusDto>();
+
+            foreach (var subjectId in subjectIds)
+            {
+                var subject = await _subjectRepository.GetByIdAsync(subjectId);
+                if (subject == null) continue;
+
+                // Filtrar inscripciones para esta materia
+                var subjectEnrollments = validEnrollments
+                    .Where(e => e.SubjectId == subjectId)
+                    .OrderByDescending(e => e.EnrollmentDate) // Más reciente primero
+                    .ToList();
+
+                // Tomar la primera con nota válida
+                var relevantEnrollment = subjectEnrollments
+                    .FirstOrDefault(e => e.FinalGrade.HasValue && e.FinalGrade >= 0 && e.FinalGrade <= 10);
+
+                result.Add(new AcademicStatusDto
+                {
+                    SubjectId = subjectId,
+                    SubjectName = subject.Name,
+                    FinalGrade = relevantEnrollment?.FinalGrade
+                });
+            }
 
             return result;
         }

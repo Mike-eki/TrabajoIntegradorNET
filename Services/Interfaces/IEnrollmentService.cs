@@ -14,6 +14,10 @@ namespace Services.Interfaces
 
         Task<List<int>> GetUserCommissionIdsAsync(int userId, CancellationToken ct);
 
+        Task<List<AcademicStatusDto>> GetAcademicStatusByCareerAsync(
+                int userId,
+                int careerId,
+                CancellationToken ct = default);
     }
 }
 

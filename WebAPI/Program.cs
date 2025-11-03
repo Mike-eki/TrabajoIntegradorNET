@@ -173,8 +173,6 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ICommissionService, CommissionService>();
 
 
-
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline

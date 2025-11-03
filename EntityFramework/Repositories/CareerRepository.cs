@@ -37,6 +37,15 @@ namespace EntityFramework
                     .Include(c => c.Subjects)
                     .FirstOrDefaultAsync(c => c.Id == id);
             }
+
+            public async Task<List<int>> GetSubjectIdsForCareerAsync(int careerId, CancellationToken ct)
+            {
+                return await _context.Careers
+                            .Where(c => c.Id == careerId)
+                            .SelectMany(c => c.Subjects)
+                            .Select(s => s.Id)
+                            .ToListAsync(ct);
+            }
             public async Task<Career> AssignSubjectsToCareer(Career career, int[] subjectIds)
             {
                 // Validación: que existan todas las subjects

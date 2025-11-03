@@ -1,0 +1,235 @@
+﻿@using BlazorApp.Models
+@using BlazorApp.Services
+
+@page "/academicstatus"
+
+@inject UserProfileService ProfileService
+@inject CareerService CareerService
+@inject AcademicStatusService AcademicStatusService
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Estado Académico</PageTitle>
+
+    <h2 class="mb-4">Mi Estado Académico</h2>
+
+    @if (ProfileService.CurrentProfile?.Careers == null || !ProfileService.CurrentProfile.Careers.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="oi oi-warning"></i> No estás inscripto en ninguna carrera.
+            <a href="/careers" class="alert-link">Inscríbete primero a una carrera</a> para ver tu estado académico.
+        </div>
+    }
+    else
+    {
+        <div class="mb-4">
+            <label class="form-label fw-bold">Selecciona una carrera</label>
+            <select class="form-select" @onchange="OnCareerSelected">
+                <option value="">-- Selecciona una carrera --</option>
+                @foreach (var career in ProfileService.CurrentProfile!.Careers)
+                {
+                    <option value="@career.Id">@career.Name</option>
+                }
+            </select>
+        </div>
+
+        @if (selectedCareerId.HasValue)
+        {
+            @if (isLoading)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando estado académico para @selectedCareerName...</p>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(loadError))
+            {
+                <div class="alert alert-danger">
+                    <i class="oi oi-warning"></i> @loadError
+                    <button class="btn btn-sm btn-outline-danger mt-2" @onclick="ReloadAcademicStatus">
+                        <i class="oi oi-reload"></i> Reintentar
+                    </button>
+                </div>
+            }
+            else if (academicStatus == null || !academicStatus.Any())
+            {
+                <div class="alert alert-info">
+                    No hay materias registradas para esta carrera.
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Estado Académico - @selectedCareerName</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Materia</th>
+                                        <th>Nota Final</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var subject in academicStatus)
+                                    {
+                                        <tr>
+                                            <td>@subject.SubjectName</td>
+                                            <td>
+                                                @if (subject.FinalGrade.HasValue)
+                                                {
+                                                    <span class="badge bg-@(subject.FinalGrade >= 4 ? "success" : "danger") fs-6">
+                                                        @subject.FinalGrade.Value.ToString("N1")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin nota</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (subject.FinalGrade.HasValue)
+                                                {
+                                                    <span class="badge bg-info fs-6">Finalizada</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark fs-6">En curso</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    }
+}
+
+@code {
+    private bool shouldRender = false;
+    private bool isLoading = false;
+    private int? selectedCareerId;
+    private string? selectedCareerName;
+    private List<AcademicStatusDto>? academicStatus;
+    private string? loadError = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = Navigation.Uri;
+            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            return;
+        }
+
+        // Asegurar que el perfil esté cargado
+        if (ProfileService.CurrentProfile == null)
+        {
+            Console.WriteLine("🔄 Cargando perfil del usuario...");
+            await ProfileService.LoadProfileAsync();
+            Console.WriteLine("✅ Perfil cargado");
+        }
+
+        shouldRender = true;
+    }
+
+    private async Task OnCareerSelected(ChangeEventArgs e)
+    {
+        academicStatus = null;
+        loadError = null;
+        isLoading = true;
+        selectedCareerId = null;
+        selectedCareerName = null;
+
+        try
+        {
+            var careerId = e.Value?.ToString();
+            if (int.TryParse(careerId, out int id))
+            {
+                // Obtener nombre de la carrera
+                var career = ProfileService.CurrentProfile?.Careers
+                    .FirstOrDefault(c => c.Id == id);
+
+                if (career != null)
+                {
+                    selectedCareerId = id;
+                    selectedCareerName = career.Name;
+                    StateHasChanged(); // Mostrar spinner inmediatamente
+
+                    var userId = AuthService.GetUserId();
+                    Console.WriteLine($"🔍 Obteniendo userId: {userId?.ToString() ?? "null"}");
+
+                    if (!userId.HasValue)
+                    {
+                        loadError = "No se pudo obtener tu ID de usuario. Intenta cerrar sesión y volver a iniciar.";
+                        return;
+                    }
+
+                    Console.WriteLine($"🚀 Cargando estado académico para usuario {userId.Value}, carrera {id}");
+
+                    var (data, error) = await AcademicStatusService.GetAcademicStatusByCareerAsync(userId.Value, id);
+
+                    if (error != null)
+                    {
+                        loadError = error;
+                        Console.WriteLine($"❌ Error al cargar estado académico: {error}");
+                    }
+                    else if (data != null)
+                    {
+                        academicStatus = data;
+                        Console.WriteLine($"✅ Estado académico cargado. Materias: {data.Count}");
+                    }
+                    else
+                    {
+                        loadError = "Respuesta vacía del servidor. Contacta al administrador.";
+                        Console.WriteLine("❌ Respuesta vacía del servidor");
+                    }
+                }
+                else
+                {
+                    loadError = "Carrera no encontrada en tu perfil.";
+                    Console.WriteLine($"❌ Carrera ID {id} no encontrada en el perfil");
+                }
+            }
+            else
+            {
+                loadError = "ID de carrera inválido.";
+                Console.WriteLine($"❌ ID de carrera inválido: {careerId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Error inesperado: {ex.Message}";
+            Console.WriteLine($"💥 Excepción en OnCareerSelected: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReloadAcademicStatus()
+    {
+        if (selectedCareerId.HasValue)
+        {
+            await OnCareerSelected(new ChangeEventArgs { Value = selectedCareerId.ToString() });
+        }
+    }
+}

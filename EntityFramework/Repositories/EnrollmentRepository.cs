@@ -161,6 +161,29 @@ namespace EntityFramework.Repositories
                 .ToListAsync(ct);
         }
 
+        public async Task<List<EnrollmentWithSubjectDto>> GetValidAcademicEnrollmentsAsync(
+    int userId,
+    List<int> subjectIds,
+    CancellationToken ct)
+        {
+            return await _context.Enrollments
+                .Include(e => e.Commission)
+                .ThenInclude(c => c.Subject)
+                .Where(e => e.StudentId == userId &&
+                           subjectIds.Contains(e.Commission.SubjectId) &&
+                           (e.Status == "Inscripto" || e.Status == "Cerrado") &&
+                           e.FinalGrade.HasValue)
+                .Select(e => new EnrollmentWithSubjectDto
+                {
+                    EnrollmentId = e.Id,
+                    SubjectId = e.Commission.SubjectId,
+                    SubjectName = e.Commission.Subject.Name,
+                    FinalGrade = e.FinalGrade,
+                    EnrollmentDate = e.EnrollmentDate,
+                    Status = e.Status
+                })
+                .ToListAsync(ct);
+        }
 
     }
 }
