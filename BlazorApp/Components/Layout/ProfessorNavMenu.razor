@@ -1,0 +1,58 @@
+﻿<div class="nav-scrollable">
+    <nav class="flex-column">
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/professor/unassigned-commissions" Match="NavLinkMatch.All">
+                <span class="oi oi-list me-2" aria-hidden="true"></span>
+                Comisiones sin asignar
+            </NavLink>
+        </div>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/professor/my-commissions" Match="NavLinkMatch.All">
+                <span class="oi oi-book me-2" aria-hidden="true"></span>
+                Mis comisiones
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+<style>
+    .nav-item {
+        padding: 0.5rem 1rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        color: dodgerblue !important;
+        text-decoration: none;
+        border-radius: 4px;
+        padding: 0.75rem 1rem;
+        transition: background-color 0.3s;
+    }
+
+        .nav-link:hover {
+            background-color: ghostwhite;
+        }
+
+        .nav-link.active {
+            background-color: mediumturquoise;
+            color: white;
+            font-weight: bold;
+        }
+
+    .oi {
+        width: 1.25rem;
+        font-size: 1.25rem;
+        vertical-align: text-top;
+    }
+</style>
+
+@code {
+    private bool collapseNavMenu = true;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "Init App",
+    "Projects": [
+      {
+        "Path": "WebAPI\\WebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "BlazorApp\\BlazorApp.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "WinFormsAdmin\\WinFormsAdmin.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

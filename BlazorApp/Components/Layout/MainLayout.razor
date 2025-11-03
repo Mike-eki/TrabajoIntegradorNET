@@ -1,0 +1,55 @@
+﻿@using BlazorApp.Services
+@using BlazorApp.Models
+
+@inherits LayoutComponentBase
+
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject UserProfileService ProfileService
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+    <main>
+        <div class="top-row ps-3 navbar navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="">Sistema Académico</a>
+                @if (AuthService.IsAuthenticated)
+                {
+                    <span class="navbar-text me-3 text-white">
+                        Hola, @(ProfileService.CurrentProfile?.FullName ?? AuthService.Username)
+                    </span>
+                    <button class="btn btn-outline-light" @onclick="Logout">Cerrar sesión</button>
+                }
+            </div>
+        </div>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = Uri.EscapeDataString(Navigation.Uri);
+            Navigation.NavigateTo($"/login?returnUrl={returnUrl}");
+            return;
+        }
+
+        // Cargar perfil si no está cargado
+        if (ProfileService.CurrentProfile == null)
+        {
+            await ProfileService.LoadProfileAsync();
+        }
+    }
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login");
+    }
+}

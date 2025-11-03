@@ -1,0 +1,237 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@using BlazorApp.Models
+@using BlazorApp.Services
+@using BlazorApp.Components.Layout
+
+
+@page "/professor/commission/{commissionId:int}/students"
+
+
+@layout ProfessorLayout
+@inject ProfessorService ProfessorService
+@inject NavigationManager Navigation
+@inject AuthenticationService AuthService
+
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Estudiantes - @commission?.SubjectName</PageTitle>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Estudiantes en @commission?.SubjectName</h2>
+        <a href="/professor/my-commissions" class="btn btn-outline-secondary">
+            <i class="oi oi-chevron-left"></i> Volver a mis comisiones
+        </a>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando estudiantes...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="oi oi-warning"></i> @errorMessage
+            <button class="btn btn-sm btn-outline-danger mt-2" @onclick="LoadStudents">
+                <i class="oi oi-reload"></i> Reintentar
+            </button>
+        </div>
+    }
+    else if (commission == null)
+    {
+        <div class="alert alert-warning">
+            Comisión no encontrada.
+        </div>
+    }
+    else if (commission.Students == null || !commission.Students.Any())
+    {
+        <div class="alert alert-info">
+            No hay estudiantes inscriptos en esta comisión.
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">@commission.SubjectName - Ciclo @commission.CycleYear</h5>
+                <small>@commission.DayOfWeek: @commission.StartTime - @commission.EndTime</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Alumno</th>
+                                <th>Legajo</th>
+                                <th>Estado</th>
+                                <th>Nota Final</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in commission.Students)
+                            {
+                                <tr>
+                                    <td>@student.StudentName</td>
+                                    <td>@student.EnrollmentNumber</td>
+                                    <td>
+                                        <span class="badge bg-@(student.Status == "Cerrado" ? "success" : "info")">
+                                            @student.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (student.FinalGrade.HasValue)
+                                        {
+                                            <span class="badge bg-@(student.FinalGrade >= 4 ? "success" : "danger") fs-6">
+                                                @student.FinalGrade.Value
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Sin nota</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="input-group" style="max-width: 150px;">
+                                            <input type="number" class="form-control"
+                                                   min="0" max="10" step="1"
+                                                   @bind="student.FinalGrade"
+                                                   @oninput="() => OnGradeChanged(student)"
+                                                   placeholder="0-10" />
+                                            <button class="btn btn-sm btn-primary"
+                                                    @onclick="() => SaveGrade(student)"
+                                                    disabled="@(isSavingGradeId == student.EnrollmentId)">
+                                                @(isSavingGradeId == student.EnrollmentId ? "Guardando..." : "Guardar")
+                                            </button>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(student.ErrorMessage))
+                                        {
+                                            <div class="text-danger small mt-1">
+                                                @student.ErrorMessage
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int CommissionId { get; set; }
+
+    private bool shouldRender = false;
+    private bool isLoading = false;
+    private ProfessorCommissionStudentsDto? commission;
+    private string? errorMessage = null;
+    private int? isSavingGradeId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // if (!AuthService.IsAuthenticated || AuthService.Role != "Professor")
+        // {
+        //     Navigation.NavigateTo("/login");
+        //     return;
+        // }
+
+        shouldRender = true;
+        await LoadStudents();
+    }
+
+    private async Task LoadStudents()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var allCommissions = await ProfessorService.GetMyCommissionsStudentsAsync();
+            commission = allCommissions?.FirstOrDefault(c => c.CommissionId == CommissionId);
+
+            if (commission == null)
+            {
+                errorMessage = "Comisión no encontrada o no tienes acceso.";
+                Console.WriteLine($"❌ Comisión {CommissionId} no encontrada");
+            }
+            else
+            {
+                Console.WriteLine($"✅ Comisión {commission.SubjectName} cargada con {commission.Students.Count} estudiantes");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar estudiantes: {ex.Message}";
+            Console.WriteLine($"❌ Error en LoadStudents: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnGradeChanged(StudentInCommissionDto student)
+    {
+        // Limpiar mensaje de error cuando cambia la nota
+        student.ErrorMessage = null;
+
+        // Validar rango
+        if (student.FinalGrade.HasValue && (student.FinalGrade < 0 || student.FinalGrade > 10))
+        {
+            student.ErrorMessage = "La nota debe estar entre 0 y 10";
+        }
+    }
+
+    private async Task SaveGrade(StudentInCommissionDto student)
+    {
+        if (!student.FinalGrade.HasValue || student.FinalGrade < 0 || student.FinalGrade > 10)
+        {
+            student.ErrorMessage = "Ingresa una nota válida entre 0 y 10";
+            return;
+        }
+
+        isSavingGradeId = student.EnrollmentId;
+        student.ErrorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var success = await ProfessorService.SetFinalGradeAsync(student.EnrollmentId, student.FinalGrade.Value);
+            if (success)
+            {
+                Console.WriteLine($"✅ Nota {student.FinalGrade} guardada para {student.StudentName}");
+                // Actualizar visualmente (ya está en el modelo)
+            }
+            else
+            {
+                student.ErrorMessage = "Error al guardar la nota. Intenta nuevamente.";
+                Console.WriteLine($"❌ Fallo al guardar nota para {student.StudentName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            student.ErrorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"💥 Excepción al guardar nota: {ex.Message}");
+        }
+        finally
+        {
+            isSavingGradeId = null;
+            StateHasChanged();
+        }
+    }
+}

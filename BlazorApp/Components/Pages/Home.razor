@@ -1,0 +1,93 @@
+﻿@using BlazorApp.Services
+@using BlazorApp.Models
+
+@page "/home"
+@inject AuthenticationService AuthService
+@inject UserProfileService ProfileService
+@inject NavigationManager Navigation
+
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Inicio</PageTitle>
+
+    <h1>Bienvenido, @(ProfileService.CurrentProfile?.FullName ?? AuthService.Username)!</h1>
+    <p>Rol: @(ProfileService.CurrentProfile?.Role ?? AuthService.Role)</p>
+
+    @if (ProfileService.CurrentProfile != null)
+    {
+        <div class="card mt-3">
+            <div class="card-body">
+                <h5 class="card-title">Mi Perfil</h5>
+                <p><strong>Nombre:</strong> @ProfileService.CurrentProfile.FullName</p>
+                <p><strong>Email:</strong> @ProfileService.CurrentProfile.Email</p>
+                <h5 class="card-title">Carreras inscriptas:</h5>
+                @if (ProfileService.CurrentProfile.Careers.Count != 0 && ProfileService.CurrentProfile.Careers != null)
+                {
+                    <ul>
+                        @foreach (var career in ProfileService.CurrentProfile.Careers)
+                        {
+                            <li>@career.Name</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>No estas inscripto a ninguna. Ir al menú de "Carerras"</p>
+                }
+            </div>
+        </div>
+    }
+    else if (isLoadingProfile)
+    {
+        <p class="text-muted">Cargando perfil...</p>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            No se pudo cargar tu perfil. 
+            <button class="btn btn-sm btn-outline-warning" @onclick="ReloadProfile">Reintentar</button>
+        </div>
+    }
+}
+
+@code {
+    private bool shouldRender = false;
+    private bool isLoadingProfile = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // if (!AuthService.IsAuthenticated)
+        // {
+        //     var returnUrl = Navigation.Uri;
+        //     Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+        //     return;
+        // }
+
+        if (ProfileService.CurrentProfile == null)
+        {
+            isLoadingProfile = true;
+            StateHasChanged(); // Opcional, pero bueno para UX inmediata
+
+            await ProfileService.LoadProfileAsync();
+
+            isLoadingProfile = false;
+        }
+
+        shouldRender = true;
+    }
+
+    private async Task ReloadProfile()
+    {
+        isLoadingProfile = true;
+        StateHasChanged();
+
+        await ProfileService.LoadProfileAsync();
+
+        isLoadingProfile = false;
+        StateHasChanged();
+    }
+}
