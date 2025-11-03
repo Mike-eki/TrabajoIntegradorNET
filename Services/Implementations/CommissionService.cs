@@ -51,5 +51,10 @@ namespace Services.Implementations
                 Status = commission.Status
             };
         }
+
+        public async Task<int> GetEnrollmentAmountOfOneCommission(int commissionId, CancellationToken ct = default)
+        {
+            return await _context.Enrollments.CountAsync(e => e.CommissionId == commissionId, ct);
+        }
     }
 }

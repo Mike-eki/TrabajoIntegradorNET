@@ -1,4 +1,5 @@
 ﻿using ADO.NET;
+using Azure.Core;
 using EntityFramework;
 using EntityFramework.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -101,6 +102,51 @@ namespace Services.Implementations
             }).ToList();
         }
 
+        public async Task SelfEnrollAsync(int studentId, int commissionId, CancellationToken ct = default)
+        {
+            // 1. Verificar que el estudiante exista y sea "Student"
+            var student = await _userRepo.GetByIdAsync(studentId, ct);
+            if (student == null || UserRoleConverter.ToString(student.Role) != "Student")
+                throw new InvalidOperationException("Estudante no encontrado o no es un estudiante válido.");
+
+            // 2. Verificar que la comisión exista y esté "Activa"
+            var commission = await _repo.GetCommissionWithEnrollmentsAsync(commissionId, ct);
+            if (commission == null)
+                throw new InvalidOperationException("Comisión no encontrada.");
+
+            if (commission.Status != "Activo")
+                throw new InvalidOperationException("La comisión no está activa.");
+
+            // 3. Verificar cupo disponible
+            if (commission.Enrollments.Count >= commission.Capacity)
+                throw new InvalidOperationException("No hay cupos disponibles en esta comisión.");
+
+            // 4. Verificar que no esté ya inscripto
+            var existingEnrollment = commission.Enrollments
+                .FirstOrDefault(e => e.StudentId == studentId && e.Status == "Inscripto");
+            if (existingEnrollment != null)
+                throw new InvalidOperationException("El estudiante ya está inscripto en esta comisión.");
+
+            // 5. Crear la inscripción
+            var enrollment = new Enrollment
+            {
+                StudentId = student.Id,
+                CommissionId = commission.Id,
+                EnrollmentDate = DateTime.UtcNow,
+                Status = "Inscripto"
+            };
+
+            await _repo.AddAsync(enrollment);
+        }
+
+        public async Task<List<int>> GetUserCommissionIdsAsync(int userId, CancellationToken ct = default)
+        {
+            var enrollments = await _context.Enrollments
+                .Where(e => e.StudentId == userId)
+                .ToListAsync(ct);
+
+            return enrollments.Select(e => e.CommissionId).ToList();
+        }
         public async Task<List<EnrollmentDetailDto>> GetAllEnrollmentsWithDetailsAsync(CancellationToken ct = default)
         {
             // 1. Obtener todas las inscripciones desde EF

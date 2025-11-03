@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Models.DTOs
+namespace BlazorApp.Models.Commissions.razor
 {
     public class CommissionWithProfessorDto
     {

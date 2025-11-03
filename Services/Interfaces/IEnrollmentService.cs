@@ -8,9 +8,11 @@ namespace Services.Interfaces
         Task<EnrollmentBulkResponseDto> BulkEnrollStudentsAsync(
             EnrollmentBulkRequestDto request,
             CancellationToken ct = default);
-
+        Task SelfEnrollAsync(int studentId, int commissionId, CancellationToken ct);
         Task<List<EnrollmentResponseDto>> GetByCommissionIdAsync(int commissionId, CancellationToken ct = default);
         Task<List<EnrollmentDetailDto>> GetAllEnrollmentsWithDetailsAsync(CancellationToken ct = default);
+
+        Task<List<int>> GetUserCommissionIdsAsync(int userId, CancellationToken ct);
 
     }
 }

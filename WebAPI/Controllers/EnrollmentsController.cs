@@ -6,6 +6,7 @@ using Models.DTOs;
 using Models.Entities;
 using Services.Implementations;
 using Services.Interfaces;
+using System.Security.Claims;
 
 namespace WebAPI.Controllers
 {
@@ -56,6 +57,55 @@ namespace WebAPI.Controllers
                 _logger.LogError(ex, "Unexpected error in bulk enrollment");
                 return StatusCode(500, new { message = "Error interno al inscribir estudiantes.", detail = ex.Message });
             }
+        }
+
+        [Authorize(Roles = "Student")]
+        [HttpPost("self")]
+        public async Task<IActionResult> SelfEnrollInCommission(
+    [FromBody] SelfEnrollmentRequestDto request,
+    CancellationToken ct = default)
+        {
+
+            // ✅ Validar ModelState primero
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Solicitud mal formada: {Errors}", string.Join(", ", ModelState.Values.SelectMany(v => v.Errors)));
+                return BadRequest(new { message = "Solicitud mal formada", errors = ModelState.Values.SelectMany(v => v.Errors) });
+            }
+
+            int userIdClaim;
+             int.TryParse(User.FindFirst("user_id")?.Value, out userIdClaim);
+            if (string.IsNullOrEmpty(userIdClaim.ToString()) || !int.TryParse(userIdClaim.ToString(), out int currentUserId))
+                return Unauthorized();
+
+            if (request.StudentId != currentUserId)
+                return Forbid(); // 403 Forbidden
+
+
+            try
+            {
+                await _enrollmentService.SelfEnrollAsync(request.StudentId, request.CommissionId, ct);
+                return Ok(new { message = "Inscripción exitosa." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en auto-inscripción del estudiante {StudentId} a comisión {CommissionId}",
+                    request.StudentId, request.CommissionId);
+                return StatusCode(500, new { message = "Error interno al inscribirse." });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("user/{userId}/commissions")]
+        public async Task<IActionResult> GetUserCommissionIds(int userId, CancellationToken ct)
+        {
+
+            List<int> commissionIds = await _enrollmentService.GetUserCommissionIdsAsync(userId, ct);
+            return Ok(commissionIds);
         }
 
         [Authorize(Roles = "Admin")]

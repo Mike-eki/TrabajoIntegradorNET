@@ -132,6 +132,14 @@ else
         }
     }
 
+    private async Task EnsureProfileLoaded()
+    {
+        if (ProfileService.CurrentProfile == null)
+        {
+            await ProfileService.LoadProfileAsync();
+        }
+    }
+
     private async Task EnrollInCareer()
     {
         if (selectedCareer == null || isAlreadyEnrolled)
@@ -164,14 +172,6 @@ else
         }
 
         StateHasChanged();
-    }
-
-    private async Task EnsureProfileLoaded()
-    {
-        if (ProfileService.CurrentProfile == null)
-        {
-            await ProfileService.LoadProfileAsync();
-        }
     }
 
 }

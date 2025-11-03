@@ -12,6 +12,8 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https:/
 builder.Services.AddScoped<UserProfileService>();
 builder.Services.AddScoped<CareerService>();
 builder.Services.AddScoped<JwtTokenParserService>();
+builder.Services.AddScoped<CommissionService>();
+builder.Services.AddScoped<EnrollmentService>();
 
 var app = builder.Build();
 

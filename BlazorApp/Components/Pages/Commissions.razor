@@ -1,14 +1,325 @@
 ﻿@using BlazorApp.Models
+@using BlazorApp.Models.Commissions.razor
 @using BlazorApp.Services
 
 @page "/commissions"
-@inject CareerService CareerService
+
 @inject UserProfileService ProfileService
+@inject CareerService CareerService
+@inject CommissionService CommissionService
+@inject EnrollmentService EnrollmentService
 @inject AuthenticationService AuthService
 @inject NavigationManager Navigation
 
-<h3>Commissions</h3>
+@if (!shouldRender)
+{
+    <p>Redirigiendo...</p>
+}
+else
+{
+    <PageTitle>Comisiones</PageTitle>
+
+    <h2 class="mb-4">Inscribirse a comisiones</h2>
+
+    @if (ProfileService.CurrentProfile?.Careers == null || !ProfileService.CurrentProfile.Careers.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="oi oi-warning"></i> No estás inscripto en ninguna carrera.
+            <a href="/careers" class="alert-link">Inscríbete primero a una carrera</a> para poder ver comisiones.
+        </div>
+    }
+    else
+    {
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Carrera</label>
+                    <select class="form-select" @onchange="OnCareerSelected">
+                        <option value="">-- Selecciona una carrera --</option>
+                        @foreach (var career in ProfileService.CurrentProfile!.Careers)
+                        {
+                            <option value="@career.Id">@career.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Materia</label>
+                    <select class="form-select" @onchange="OnSubjectSelected" disabled="@(selectedCareer == null || !selectedCareer.Subjects.Any())">
+                        <option value="">-- Todas las materias --</option>
+                        @if (selectedCareer != null)
+                        {
+                            @foreach (var subject in selectedCareer.Subjects)
+                            {
+                                <option value="@subject.Id">@subject.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        @if (selectedCareer != null)
+        {
+            @if (allCommissions == null)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando comisiones disponibles...</p>
+                </div>
+            }
+            else if (!filteredCommissions.Any())
+            {
+                <div class="alert alert-info">
+                    No hay comisiones activas disponibles para esta carrera/materia.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Materia</th>
+                                <th>Profesor</th>
+                                <th>Día</th>
+                                <th>Horario</th>
+                                <th>Cupo</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var commission in filteredCommissions)
+                            {
+                                <tr>
+                                    <td>@commission.SubjectName</td>
+                                    <td>@commission.ProfessorName</td>
+                                    <td>@commission.DayOfWeek</td>
+                                    <td>@commission.StartTime - @commission.EndTime</td>
+                                    <td>
+                                        @if (commission.AvailableAmount > 0)
+                                        {
+                                            <span class="badge bg-success">@commission.AvailableAmount disponibles</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Sin cupo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (enrolledCommissionIds.Contains(commission.Id))
+                                        {
+                                            <span class="badge bg-primary p-2">Ya inscripto</span>
+                                        }
+                                        else if (commission.AvailableAmount <= 0)
+                                        {
+                                            <button class="btn btn-outline-secondary" disabled>Sin cupo</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-primary @(isEnrollingCommissionId == commission.Id ? "disabled" : "")"
+                                                    @onclick="() => EnrollInCommission(commission.Id)">
+                                                @(isEnrollingCommissionId == commission.Id ? "Inscribiendo..." : "Inscribirse")
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(enrollmentError))
+            {
+                <div class="alert alert-danger mt-3">
+                    <i class="oi oi-warning"></i> @enrollmentError
+                </div>
+            }
+        }
+    }
+}
 
 @code {
+    private bool shouldRender = false;
+    private CareerResponseDto? selectedCareer; // ✅ Ahora usamos CareerResponseDto (con todas las materias)
+    private int? selectedSubjectId;
+    private List<CommissionWithProfessorDto>? allCommissions;
+    private List<CommissionWithProfessorDto> filteredCommissions = new();
+    private HashSet<int> enrolledCommissionIds = new();
+    private int? isEnrollingCommissionId;
+    private List<CareerResponseDto> allCareers = new(); // ✅ Lista completa de carreras con sus materias
+    private string? enrollmentError = null; // ✅ Nueva variable para errores
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = Navigation.Uri;
+            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            return;
+        }
+
+        // ✅ Asegurar que el perfil esté cargado primero
+        if (ProfileService.CurrentProfile == null)
+        {
+            Console.WriteLine("🔄 Cargando perfil del usuario...");
+            await ProfileService.LoadProfileAsync();
+            Console.WriteLine("✅ Perfil cargado");
+        }
+
+        // ✅ Cargar carreras
+        allCareers = (await CareerService.GetCareersAsync()) ?? new List<CareerResponseDto>();
+        Console.WriteLine($"✅ Carreras cargadas: {allCareers.Count}");
+
+        // ✅ Cargar comisiones
+        allCommissions = await CommissionService.GetActiveCommissionsAsync();
+        Console.WriteLine($"✅ Comisiones cargadas: {allCommissions?.Count}");
+
+        // ✅ Cargar comisiones inscriptas
+        var userId = AuthService.GetUserId();
+        if (userId.HasValue)
+        {
+            Console.WriteLine($"🔍 Obteniendo comisiones inscriptas para usuario {userId}");
+            var enrolledIds = await EnrollmentService.GetEnrolledCommissionIdsAsync(userId.Value);
+
+            if (enrolledIds != null)
+            {
+                enrolledCommissionIds = new HashSet<int>(enrolledIds);
+                Console.WriteLine($"✅ Comisiones inscriptas cargadas: {string.Join(", ", enrolledIds)}");
+            }
+            else
+            {
+                Console.WriteLine("❌ No se pudieron cargar comisiones inscriptas");
+            }
+        }
+        else
+        {
+            Console.WriteLine("❌ No se pudo obtener userId");
+        }
+
+        shouldRender = true;
+    }
+
+    private void OnCareerSelected(ChangeEventArgs e)
+    {
+        var careerId = e.Value?.ToString();
+        if (int.TryParse(careerId, out int id))
+        {
+            // ✅ CORRECCIÓN CLAVE: Buscar en allCareers (no en el perfil)
+            selectedCareer = allCareers.FirstOrDefault(c => c.Id == id);
+
+            // ✅ Verificar si el usuario está inscripto en esta carrera
+            if (selectedCareer != null)
+            {
+                var isEnrolled = ProfileService.CurrentProfile?.Careers
+                    .Any(c => c.Id == selectedCareer.Id);
+
+                if (isEnrolled == false)
+                {
+                    // Opcional: mostrar advertencia
+                    // Pero permitimos ver comisiones igual
+                }
+            }
+        }
+        else
+        {
+            selectedCareer = null;
+        }
+        selectedSubjectId = null;
+        ApplyFilters();
+    }
+
+    private void OnSubjectSelected(ChangeEventArgs e)
+    {
+        var subjectId = e.Value?.ToString();
+        if (int.TryParse(subjectId, out int id))
+        {
+            selectedSubjectId = id;
+        }
+        else
+        {
+            selectedSubjectId = null;
+        }
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        if (allCommissions == null || selectedCareer == null)
+        {
+            filteredCommissions = new();
+            return;
+        }
+
+        // ✅ Obtener IDs de subjects de la carrera seleccionada
+        var subjectIds = selectedCareer.Subjects.Select(s => s.Id).ToList();
+
+        // Filtrar comisiones: solo materias de la carrera seleccionada
+        var filtered = allCommissions
+            .Where(c => subjectIds.Contains(c.SubjectId))
+            .ToList();
+
+        // Si hay materia seleccionada, filtrar aún más
+        if (selectedSubjectId.HasValue)
+        {
+            filtered = filtered.Where(c => c.SubjectId == selectedSubjectId.Value).ToList();
+        }
+
+        filteredCommissions = filtered;
+    }
+
+    private async Task EnrollInCommission(int commissionId)
+    {
+        enrollmentError = null;
+        var userId = AuthService.GetUserId();
+        if (!userId.HasValue)
+        {
+            enrollmentError = "Error: No se pudo obtener tu ID de usuario";
+            StateHasChanged();
+            return;
+        }
+
+        isEnrollingCommissionId = commissionId;
+        StateHasChanged();
+
+        try
+        {
+            var success = await CommissionService.SelfEnrollAsync(userId.Value, commissionId);
+
+            if (success)
+            {
+                // ✅ Actualizar estado local
+                enrolledCommissionIds.Add(commissionId);
+
+                // ✅ Actualizar cupos
+                var commission = allCommissions?.FirstOrDefault(c => c.Id == commissionId);
+                if (commission != null)
+                {
+                    commission.AvailableAmount--;
+                }
+
+                // ✅ Recargar perfil para actualizar datos
+                await ProfileService.LoadProfileAsync();
+
+                ApplyFilters();
+            }
+            else
+            {
+                enrollmentError = "Error al inscribirse. Verifica cupos o permisos.";
+            }
+        }
+        catch (Exception ex)
+        {
+            enrollmentError = $"Error inesperado: {ex.Message}";
+            Console.WriteLine($"💥 Error detallado: {ex}");
+        }
+        finally
+        {
+            isEnrollingCommissionId = null;
+            StateHasChanged();
+        }
+    }
 }

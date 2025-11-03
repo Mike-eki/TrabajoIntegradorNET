@@ -25,12 +25,32 @@ namespace WebAPI.Controllers
             _commissionService = commissionService;
         }
 
+        [Authorize]
         [HttpGet]
-        public async Task<IActionResult> GetAllCommissionsWithProfessors(CancellationToken ct)
+        public async Task<IActionResult> GetAllCommissionsWithProfessors(
+            [FromQuery] string? status = null,
+            CancellationToken ct = default)
         {
             try
             {
                 var commissions = await _repo.GetAllCommissionsWithProfessorsAsync(ct);
+
+
+                // ✅ Filtrar SOLO si se proporciona un status válido
+                if (!string.IsNullOrEmpty(status))
+                {
+                    commissions = commissions
+                        .Where(c => c.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                // ✅ Calcular cupos disponibles para TODAS las comisiones (no solo las activas)
+                foreach (var commission in commissions)
+                {
+                    var enrollmentAmount = await _commissionService.GetEnrollmentAmountOfOneCommission(commission.Id, ct);
+                    commission.AvailableAmount = commission.Capacity - enrollmentAmount;
+                }
+
                 return Ok(commissions);
             }
             catch (Exception ex)
