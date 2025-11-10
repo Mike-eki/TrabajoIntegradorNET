@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.Entities
 {
@@ -9,21 +9,22 @@ namespace Models.Entities
         public int Id { get; set; }
 
         [Required]
-        public int UserId { get; set; }
+        public int StudentId { get; set; } // FK hacia User (Student)
 
         [Required]
+        [ForeignKey(nameof(Commission))]
         public int CommissionId { get; set; }
+        public Commission Commission { get; set; } = null!;
+
+        public DateTime EnrollmentDate { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UnenrollmentDate { get; set; } // ✨ Nueva propiedad
+
+        public int? FinalGrade { get; set; }
 
         [Required]
-        public DateTime EnrollDate { get; set; }
-
-        [Required]
-        [MaxLength(50)]
-        public string Status { get; set; } = "Activo";
-
-        // Propiedades de navegación
-        public User User { get; set; } = null!; // Navegación a User
-        public Commission Commission { get; set; } = null!; // Navegación a Commission
-        public ICollection<Grade> Grades { get; set; } = new List<Grade>(); // Navegación a Grades
+        [MaxLength(20)]
+        public string Status { get; set; } = "Inscripto"; // Inscripto, Pendiente, Cerrado
     }
 }
+

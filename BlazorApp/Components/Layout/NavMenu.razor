@@ -1,0 +1,64 @@
+﻿@using BlazorApp.Services
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject UserProfileService ProfileService
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        @if (AuthService.IsAuthenticated)
+        {
+            <span class="navbar-text me-3 text-white">
+                Hola, @(ProfileService.CurrentProfile?.FullName ?? AuthService.Username)
+            </span>
+        }
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        @if (AuthService.IsAuthenticated)
+        {
+            <div class="nav-item px-3">
+                <a class="nav-link" href="/home">
+                    <span class="oi oi-home" aria-hidden="true"></span> Inicio
+                </a>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" href="/careers">
+                    <span class="oi oi-book" aria-hidden="true"></span> Carreras
+                </a>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" href="/commissions">
+                    <span class="oi oi-book" aria-hidden="true"></span> Comisiones
+                </a>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" href="/academicstatus">
+                    <span class="oi oi-book" aria-hidden="true"></span> Estado academico
+                </a>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" @onclick="Logout">
+                    <span class="oi oi-account-logout"></span>Cerrar sesión
+                </a>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login");
+    }
+}

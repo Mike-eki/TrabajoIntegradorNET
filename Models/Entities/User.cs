@@ -1,5 +1,4 @@
-﻿using Models.Relations;
-using Models.Enums;
+﻿using Models.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace Models.Entities
@@ -15,7 +14,11 @@ namespace Models.Entities
 
         [Required]
         [MaxLength(100)]
-        public string Password { get; set; } = null!;
+        public string Fullname { get; set; } = null!;
+
+        [Required]
+        [MaxLength(50)]
+        public string Legajo { get; set; } = null!;
 
         [Required]
         [EmailAddress]
@@ -24,14 +27,13 @@ namespace Models.Entities
 
         [Required]
         [MaxLength(100)]
-        public string Name { get; set; } = null!;
+        public string PasswordHash { get; set; } = null!;
+
+        public string Salt { get; set; } = string.Empty;
 
         [Required]
-        public RoleType RoleName { get; set; }
+        public UserRole Role { get; set; } = UserRole.Student; // Enum con default Student
 
-        // Propiedades de navegación
-        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
-        public ICollection<UserSpecialty> UserSpecialties { get; set; } = new List<UserSpecialty>();
-        public ICollection<Commission> Commissions { get; set; } = new List<Commission>(); // Si es Profesor
+
     }
 }
