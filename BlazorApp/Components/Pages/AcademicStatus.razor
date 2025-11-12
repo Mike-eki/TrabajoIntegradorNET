@@ -1,8 +1,8 @@
 ﻿@using BlazorApp.Models
 @using BlazorApp.Services
-
 @page "/academicstatus"
 
+@inject IJSRuntime JS
 @inject UserProfileService ProfileService
 @inject CareerService CareerService
 @inject AcademicStatusService AcademicStatusService
@@ -22,7 +22,7 @@ else
     @if (ProfileService.CurrentProfile?.Careers == null || !ProfileService.CurrentProfile.Careers.Any())
     {
         <div class="alert alert-warning">
-            <i class="oi oi-warning"></i> No estás inscripto en ninguna carrera.
+            No estás inscripto en ninguna carrera.
             <a href="/careers" class="alert-link">Inscríbete primero a una carrera</a> para ver tu estado académico.
         </div>
     }
@@ -53,13 +53,13 @@ else
             else if (!string.IsNullOrEmpty(loadError))
             {
                 <div class="alert alert-danger">
-                    <i class="oi oi-warning"></i> @loadError
+                    @loadError
                     <button class="btn btn-sm btn-outline-danger mt-2" @onclick="ReloadAcademicStatus">
-                        <i class="oi oi-reload"></i> Reintentar
+                        Reintentar
                     </button>
                 </div>
             }
-            else if (academicStatus == null || !academicStatus.Any())
+            else if (allCareerSubjects == null || !allCareerSubjects.Any())
             {
                 <div class="alert alert-info">
                     No hay materias registradas para esta carrera.
@@ -67,53 +67,88 @@ else
             }
             else
             {
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Estado Académico - @selectedCareerName</h5>
+                <!-- CONTENEDOR QUE SE ABRE EN VENTANA PARA IMPRIMIR -->
+                <div id="pdf-content" style="background:white; padding:40px; font-family:Arial,sans-serif; color:#212529;">
+                    <div style="text-align:center; margin-bottom:30px;">
+                        <h1 style="color:#0d6efd; margin:0; font-size:28px;">Estado Académico</h1>
+                        <p style="font-size:18px; margin:10px 0;">
+                            <strong>Estudiante:</strong> @(ProfileService.CurrentProfile?.FullName ?? "Nombre no disponible")
+                        </p>
+                        <p style="font-size:18px; margin:10px 0;">
+                            <strong>Carrera:</strong> @selectedCareerName
+                        </p>
+                        <p style="color:#666; font-size:14px;">
+                            Generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                        </p>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Materia</th>
-                                        <th>Nota Final</th>
-                                        <th>Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var subject in academicStatus)
-                                    {
-                                        <tr>
-                                            <td>@subject.SubjectName</td>
-                                            <td>
-                                                @if (subject.FinalGrade.HasValue)
+
+                    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                        <thead>
+                            <tr style="background:#0d6efd; color:white;">
+                                <th style="padding:12px; text-align:left;">Materia</th>
+                                <th style="padding:12px; text-align:center;">Nota Final</th>
+                                <th style="padding:12px; text-align:center;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var subject in allCareerSubjects)
+                            {
+                                var status = FindStatusForSubject(subject.Id, subject.Name);
+
+                                <tr style="border-bottom:1px solid #ddd; page-break-inside: avoid;">
+                                    <td style="padding:10px;">@subject.Name</td>
+                                    <td style="padding:10px; text-align:center;">
+                                        @if (status?.FinalGrade.HasValue ?? false)
+                                        {
+                                            <span style="background:@(status.FinalGrade >= 4 ? "#28a745" : "#dc3545");
+                                                                                          color:white; padding:5px 12px; border-radius:20px;">
+                                                @status.FinalGrade.Value.ToString("N1")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:#666;">Sin nota</span>
+                                        }
+                                    </td>
+                                    <td style="padding:10px; text-align:center;">
+                                        @{
+                                            string bg = "#6c757d";      // gris
+                                            string txt = "white";
+                                            string label = "No iniciada";
+
+                                            if (status != null)
+                                            {
+                                                if (status.FinalGrade.HasValue)
                                                 {
-                                                    <span class="badge bg-@(subject.FinalGrade >= 4 ? "success" : "danger") fs-6">
-                                                        @subject.FinalGrade.Value.ToString("N1")
-                                                    </span>
+                                                    bg = "#17a2b8";     // azul
+                                                    label = "Finalizada";
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-muted">Sin nota</span>
+                                                    bg = "#ffc107";     // amarillo
+                                                    txt = "#000";
+                                                    label = "En curso";
                                                 }
-                                            </td>
-                                            <td>
-                                                @if (subject.FinalGrade.HasValue)
-                                                {
-                                                    <span class="badge bg-info fs-6">Finalizada</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-warning text-dark fs-6">En curso</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                            }
+                                        }
+                                        <span style="background:@bg; color:@txt; padding:5px 12px; border-radius:20px;">
+                                            @label
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- BOTÓN DESCARGAR / IMPRIMIR -->
+                <div class="mt-4 text-end">
+                    <button class="btn btn-success btn-lg"
+                            onclick="window.__openPrintableWindowDirect('pdf-content')"
+                            disabled="@(allCareerSubjects == null || !allCareerSubjects.Any())">
+                        Descargar Estado Académico (PDF)
+                    </button>
+
                 </div>
             }
         }
@@ -123,100 +158,206 @@ else
 @code {
     private bool shouldRender = false;
     private bool isLoading = false;
+    private bool isPrinting = false;
     private int? selectedCareerId;
     private string? selectedCareerName;
     private List<AcademicStatusDto>? academicStatus;
-    private string? loadError = null;
+    private List<SubjectItem>? allCareerSubjects;
+    private string? loadError;
+
+    private bool CanGeneratePrintable => !isLoading && allCareerSubjects != null && allCareerSubjects.Any();
+    private record SubjectItem(int Id, string Name);
 
     protected override async Task OnInitializedAsync()
     {
-        // if (!AuthService.IsAuthenticated)
-        // {
-        //     var returnUrl = Navigation.Uri;
-        //     Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
-        //     return;
-        // }
-
-        // Asegurar que el perfil esté cargado
         if (ProfileService.CurrentProfile == null)
         {
-            Console.WriteLine("🔄 Cargando perfil del usuario...");
             await ProfileService.LoadProfileAsync();
-            Console.WriteLine("✅ Perfil cargado");
         }
-
         shouldRender = true;
     }
+
+    // Registra helper JS para abrir ventana imprimible (solo una vez)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var js = @"
+            (function() {
+                if (window.__openPrintableWindowDirect) return;
+
+                window.__openPrintableWindowDirect = function(elementId) {
+                    try {
+                        const el = document.getElementById(elementId);
+                        if (!el) throw new Error('Elemento no encontrado: ' + elementId);
+
+                        const html = `
+                            <!doctype html>
+                            <html>
+                            <head>
+                                <meta charset='utf-8'>
+                                <meta name='viewport' content='width=device-width,initial-scale=1'>
+                                <title>Estado Académico</title>
+                                <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css'>
+                                <style>
+                                    body { padding:40px; font-family:Arial,sans-serif; background:white; }
+                                    @media print {
+                                        table { page-break-inside:auto; }
+                                        tr { page-break-inside:avoid; page-break-after:auto; }
+                                        thead { display:table-header-group; }
+                                        tfoot { display:table-footer-group; }
+                                    }
+                                    body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+                                </style>
+                            </head>
+                            <body>
+                                ${el.outerHTML}
+                            </body>
+                            </html>
+                        `;
+
+                        const w = window.open('', '_blank');
+                        if (!w) throw new Error('No se pudo abrir ventana nueva (bloqueador de popups?)');
+
+                        w.document.open();
+                        w.document.write(html);
+                        w.document.close();
+
+                        // Esperar un poco antes de imprimir
+                        setTimeout(() => {
+                            w.focus();
+                            w.print();
+                        }, 500);
+                    } catch (err) {
+                        alert('Error al preparar la impresión en el navegador: ' + err.message);
+                    }
+                };
+            })();
+        ";
+            await JS.InvokeVoidAsync("eval", js);
+        }
+    }
+
+
 
     private async Task OnCareerSelected(ChangeEventArgs e)
     {
         academicStatus = null;
+        allCareerSubjects = null;
         loadError = null;
         isLoading = true;
         selectedCareerId = null;
         selectedCareerName = null;
+        StateHasChanged();
+
+        if (!int.TryParse(e.Value?.ToString(), out int id))
+        {
+            loadError = "ID de carrera inválido.";
+            isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        var career = ProfileService.CurrentProfile?.Careers.FirstOrDefault(c => c.Id == id);
+        if (career == null)
+        {
+            loadError = "Carrera no encontrada.";
+            isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        selectedCareerId = id;
+        selectedCareerName = career.Name;
 
         try
         {
-            var careerId = e.Value?.ToString();
-            if (int.TryParse(careerId, out int id))
+            var allCareers = await CareerService.GetCareersAsync();
+            if (allCareers == null)
             {
-                // Obtener nombre de la carrera
-                var career = ProfileService.CurrentProfile?.Careers
-                    .FirstOrDefault(c => c.Id == id);
+                loadError = "No se pudieron cargar las carreras.";
+                return;
+            }
 
-                if (career != null)
-                {
-                    selectedCareerId = id;
-                    selectedCareerName = career.Name;
-                    StateHasChanged(); // Mostrar spinner inmediatamente
+            var selectedCareerFull = allCareers.FirstOrDefault(c => c.Id == id);
+            if (selectedCareerFull == null)
+            {
+                loadError = "Carrera no encontrada en la lista general.";
+                return;
+            }
 
-                    var userId = AuthService.GetUserId();
-                    Console.WriteLine($"🔍 Obteniendo userId: {userId?.ToString() ?? "null"}");
+            var careerSubjects = new List<SubjectItem>();
+            if (selectedCareerFull.Subjects != null && selectedCareerFull.Subjects.Any())
+            {
+                careerSubjects = selectedCareerFull.Subjects
+                    .Select(s => new SubjectItem(s.Id, s.Name))
+                    .OrderBy(s => s.Name)
+                    .ToList();
+            }
 
-                    if (!userId.HasValue)
-                    {
-                        loadError = "No se pudo obtener tu ID de usuario. Intenta cerrar sesión y volver a iniciar.";
-                        return;
-                    }
-
-                    Console.WriteLine($"🚀 Cargando estado académico para usuario {userId.Value}, carrera {id}");
-
-                    var (data, error) = await AcademicStatusService.GetAcademicStatusByCareerAsync(userId.Value, id);
-
-                    if (error != null)
-                    {
-                        loadError = error;
-                        Console.WriteLine($"❌ Error al cargar estado académico: {error}");
-                    }
-                    else if (data != null)
-                    {
-                        academicStatus = data;
-                        Console.WriteLine($"✅ Estado académico cargado. Materias: {data.Count}");
-                    }
-                    else
-                    {
-                        loadError = "Respuesta vacía del servidor. Contacta al administrador.";
-                        Console.WriteLine("❌ Respuesta vacía del servidor");
-                    }
-                }
-                else
-                {
-                    loadError = "Carrera no encontrada en tu perfil.";
-                    Console.WriteLine($"❌ Carrera ID {id} no encontrada en el perfil");
-                }
+            var userId = AuthService.GetUserId();
+            if (!userId.HasValue)
+            {
+                loadError = "No se pudo obtener el ID del usuario.";
             }
             else
             {
-                loadError = "ID de carrera inválido.";
-                Console.WriteLine($"❌ ID de carrera inválido: {careerId}");
+                var (data, error) = await AcademicStatusService.GetAcademicStatusByCareerAsync(userId.Value, id);
+                if (error != null)
+                {
+                    loadError = error;
+                    return;
+                }
+                academicStatus = data ?? new List<AcademicStatusDto>();
             }
+
+            // Unión: materias de la carrera + materias del estado académico
+            var union = new Dictionary<int, SubjectItem>();
+            foreach (var s in careerSubjects)
+            {
+                if (!union.ContainsKey(s.Id)) union[s.Id] = s;
+            }
+
+            int pseudoId = -1;
+            if (academicStatus != null && academicStatus.Any())
+            {
+                foreach (var st in academicStatus)
+                {
+                    int sid = 0;
+                    try
+                    {
+                        var prop = st.GetType().GetProperty("SubjectId");
+                        if (prop != null)
+                        {
+                            var val = prop.GetValue(st);
+                            if (val != null && int.TryParse(val.ToString(), out int parsed)) sid = parsed;
+                        }
+                    }
+                    catch { sid = 0; }
+
+                    if (sid == 0)
+                    {
+                        // evitar duplicados por nombre
+                        var normalized = Normalize(st.SubjectName ?? "");
+                        if (union.Values.Any(u => Normalize(u.Name) == normalized)) continue;
+                        sid = pseudoId--;
+                        union[sid] = new SubjectItem(sid, st.SubjectName ?? $"Materia {sid}");
+                    }
+                    else
+                    {
+                        if (!union.ContainsKey(sid))
+                        {
+                            union[sid] = new SubjectItem(sid, st.SubjectName ?? $"Materia {sid}");
+                        }
+                    }
+                }
+            }
+
+            allCareerSubjects = union.Values.OrderBy(s => s.Name).ToList();
         }
         catch (Exception ex)
         {
             loadError = $"Error inesperado: {ex.Message}";
-            Console.WriteLine($"💥 Excepción en OnCareerSelected: {ex.Message}");
-            Console.WriteLine($"StackTrace: {ex.StackTrace}");
         }
         finally
         {
@@ -228,8 +369,91 @@ else
     private async Task ReloadAcademicStatus()
     {
         if (selectedCareerId.HasValue)
-        {
             await OnCareerSelected(new ChangeEventArgs { Value = selectedCareerId.ToString() });
+    }
+
+    private AcademicStatusDto? FindStatusForSubject(int subjectId, string subjectName)
+    {
+        if (academicStatus == null || !academicStatus.Any()) return null;
+
+        // 1) match por SubjectId si existe en DTO
+        foreach (var st in academicStatus)
+        {
+            try
+            {
+                var prop = st.GetType().GetProperty("SubjectId");
+                if (prop != null)
+                {
+                    var val = prop.GetValue(st);
+                    if (val != null && int.TryParse(val.ToString(), out int parsed) && parsed == subjectId)
+                        return st;
+                }
+            }
+            catch { }
         }
+
+        // 2) match por nombre normalizado
+        var target = Normalize(subjectName);
+        var matched = academicStatus.FirstOrDefault(s => Normalize(s.SubjectName ?? "") == target);
+        if (matched != null) return matched;
+
+        // 3) fallback por contains
+        matched = academicStatus.FirstOrDefault(s => (s.SubjectName ?? "").Contains(subjectName, StringComparison.InvariantCultureIgnoreCase));
+        return matched;
+    }
+
+    private static string Normalize(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        var normalized = s.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in normalized)
+        {
+            var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+                sb.Append(ch);
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC).ToLowerInvariant();
+    }
+
+    // --- IMPRESIÓN (estrategia preferida: abre nueva ventana con HTML y llama a window.print)
+    private async Task OpenPrintableWindow()
+    {
+        if (!CanGeneratePrintable) return;
+
+        isPrinting = true;
+        StateHasChanged();
+
+        try
+        {
+            var inlinePrintStyles = @"
+            @media print {
+                table { page-break-inside:auto; }
+                tr { page-break-inside:avoid; page-break-after:auto; }
+                thead { display:table-header-group; }
+                tfoot { display:table-footer-group; }
+            }
+            body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        ";
+
+            // Esta llamada se ejecuta directamente en respuesta al clic → no es bloqueada.
+            await JS.InvokeVoidAsync("window.__openPrintableWindowNow", "pdf-content", inlinePrintStyles);
+        }
+        finally
+        {
+            isPrinting = false;
+            StateHasChanged();
+        }
+    }
+
+
+    // --- Fallback (desactivado por defecto). Requiere html2pdf y puede volver a provocar problemas de memoria.
+    // Si lo habilitas y quieres probar descarga automática, implementa la inyección del html2pdf bundle y usa la llamada JS adecuada.
+    private Task DownloadPdfFallback()
+    {
+        // NO implementado por defecto porque vuelve a usar canvas/Blob grande.
+        loadError = "La descarga automática está deshabilitada por seguridad. Usa 'Imprimir / Guardar como PDF' que es más estable.";
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 }
